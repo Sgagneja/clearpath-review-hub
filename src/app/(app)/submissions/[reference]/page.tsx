@@ -12,7 +12,6 @@ import { SeverityGlyph } from "@/components/severity";
 import { SlaIndicator } from "@/components/sla";
 import { StatusBadge } from "@/components/status-badge";
 import { Timeline } from "@/components/timeline";
-import { Avatar } from "@/components/ui/avatar";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Notice } from "@/components/ui/notice";
 import { can } from "@/domain/permissions";
@@ -75,11 +74,11 @@ export default async function SubmissionPage({ params, searchParams }: PageProps
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge status={detail.status} />
-            <span className="font-mono text-xs text-ink-500">
-              {detail.reference} · Version {detail.currentVersion}
+            <span className="text-xs text-ink-500">
+              <span className="font-mono">{detail.reference}</span> · Version {detail.currentVersion}
             </span>
           </div>
-          <h1 className="mt-2 font-serif text-[2rem] font-medium leading-tight tracking-[-0.015em] text-ink-950">{detail.title}</h1>
+          <h1 className="page-title mt-2">{detail.title}</h1>
           <dl className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-[0.8125rem] text-ink-600">
             <div className="flex items-center gap-1.5">
               <dt className="sr-only">Product and channel</dt>
@@ -89,10 +88,7 @@ export default async function SubmissionPage({ params, searchParams }: PageProps
             </div>
             <div className="flex items-center gap-1.5">
               <dt className="text-ink-400">Submitted by</dt>
-              <dd className="flex items-center gap-1.5 font-medium text-ink-800">
-                <Avatar person={detail.submitter} size="xs" />
-                {detail.submitter?.name ?? "Unknown"}
-              </dd>
+              <dd className="font-medium text-ink-800">{detail.submitter?.name ?? "Unknown"}</dd>
             </div>
             <div className="flex items-center gap-1.5">
               <dt className="text-ink-400">Launch</dt>

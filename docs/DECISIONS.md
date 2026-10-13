@@ -175,11 +175,12 @@ page header) designed for this product.
 apps built on them tend to look alike, and the brief asked for something that
 doesn't look generic.
 
-**Notes:** Type is IBM Plex Sans for the interface, IBM Plex Mono for review
-numbers and figures, and Newsreader (a serif) for marketing copy, so copy under
-review reads like a document rather than a form field. Fonts are served from the
-app itself, not from Google, so no third party sees who uses it.
-Icons are Lucide.
+**Notes:** Type is IBM Plex Sans for the interface, headings and figures. IBM
+Plex Mono is kept for things people copy or quote exactly: review numbers
+(MKT-1017), legal citations and timestamps. Newsreader (a serif) is used only
+for the marketing copy under review, so serif always means "this is what the
+customer reads". Fonts are served from the app itself, not from Google, so no
+third party sees who uses it. Icons are Lucide.
 
 ### A hand-written rules engine, not AI
 
@@ -208,10 +209,12 @@ marketing copy leaves the system.
 
 ### Vitest and Playwright
 
-**Why:** Vitest runs the unit tests (265 of them, mostly on the business rules
-in `src/domain/`) in under a second. Playwright signs in as each role and checks
+**Why:** Vitest runs the unit tests (267 of them, mostly on the business rules
+in `src/domain/`) in about a second. Playwright signs in as each role and checks
 that every page fits at five screen sizes, and regenerates the README
-screenshots.
+screenshots. GitHub Actions runs lint, type checks, unit tests and a production
+build on every push, then the five-size layout check against a fresh database
+(`.github/workflows/ci.yml`).
 
 ### Vercel, with configuration in Vercel's environment variables
 
@@ -280,6 +283,16 @@ what to do. Anything unexpected is logged on the server and shown as
 "Something went wrong on our side. Nothing was saved." No error ever includes
 database messages, file paths or technical detail.
 
+If a whole page fails, the person sees "This page didn't load" with a Try again
+button and a short reference they can quote, which matches the entry in the
+server log. There is one of these inside the app (the menu stays), one for the
+sign-in page and one for the rare case where the outer frame itself fails
+(`src/app/(app)/error.tsx`, `src/app/error.tsx`, `src/app/global-error.tsx`). A
+failed audit download returns to the audit trail with a sentence explaining what
+to do, rather than a blank error page. Missing configuration (the database
+address or the session secret) stops the request with a message in the server
+log that says exactly which setting to add and where.
+
 ### No settings page
 
 The team asked for a tool that works the moment it's opened. Deadlines, rules
@@ -320,9 +333,10 @@ Internal terms are replaced with the team's own words:
 | Persona | Person |
 | Audit export (CSV) | Download for Excel |
 | System actor | Review Hub (automatic) |
-
-A final pass over the remaining technical wording is in progress (see
-[PLAN.md](PLAN.md#delivery)).
+| Separation of duties | A second reviewer has to decide this |
+| Rules engine version | Rule set 2026.10.1 |
+| Rules evaluated | 13 checks |
+| 404 | Nothing filed under that reference |
 
 ### What reviewers see first
 
@@ -371,11 +385,31 @@ guide is [IMPORTING.md](IMPORTING.md); the decisions behind it:
 
 ### A look of its own
 
-The brief asked for something that doesn't look generic. Review Hub uses a
-paper-and-ink palette with a deep green brand colour, a serif for the copy
-under review, monospaced figures for review numbers and deadlines, and a
-hatched edge for overdue work. Colour is never the only signal: every status
-and deadline is also written out in words, and every risk has its score.
+The brief asked for something that doesn't look generic. The reference point is
+the paperwork compliance teams already trust, a marked-up proof and a printed
+report, rather than a typical software dashboard:
+
+- A paper-and-ink palette with one deep green brand colour, tight corners and
+  flat surfaces with a hairline edge, so sections read as sheets, not tiles.
+- Labels in sentence case, never small capitals. Headings and numbers in the
+  same sans as the rest of the page.
+- Headline numbers as one line of figures (the queue) or a ruled table (the
+  dashboard), not a row of coloured tiles.
+- Status written as a word with a small square key, like the legend on a
+  printed chart, rather than coloured pills.
+- How to read a chart or table sits at its foot in small print, like a
+  footnote, instead of a sentence under every heading.
+- Faces (initials) only where identity matters: the person switcher and the
+  comment thread. Elsewhere a name is just a name.
+- Error and "not found" messages are plain left-aligned text with one way out,
+  not a centred icon in a circle.
+- The sign-in page is a short staff list with a line on what each person can
+  try, rather than a marketing splash.
+- Highlighter marks, footnote numbers and a hatched edge for overdue work carry
+  the proof metaphor into the review itself.
+
+Colour is never the only signal: every status and deadline is also written out
+in words, and every risk has its score.
 
 ### Fits every screen
 

@@ -24,7 +24,7 @@ export function Logo({ tone = "light", className }: { tone?: "light" | "dark"; c
         >
           ClearPath
         </span>
-        <span className={cn("eyebrow mt-1 text-[0.6rem]", tone === "light" ? "text-brand-200" : "text-brand-700")}>
+        <span className={cn("mt-1 text-[0.6875rem] font-medium", tone === "light" ? "text-brand-200" : "text-brand-700")}>
           Review Hub
         </span>
       </span>

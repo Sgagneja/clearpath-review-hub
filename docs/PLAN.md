@@ -144,9 +144,10 @@ These are on the dashboard, computed from the same records the team works in
 | Excel/CSV and email import with guidelines | Done |
 | Fits every screen size, checked automatically at five sizes | Done |
 | Documentation | Done |
-| Last plain-language pass on remaining technical terms | In progress |
-| Friendly error pages everywhere, startup check for missing configuration | In progress |
-| Automated checks on every change (GitHub Actions) | Next |
+| Design pass away from the generic dashboard look | Done |
+| Last plain-language pass on remaining technical terms | Done |
+| Friendly error pages everywhere, clear message for missing configuration | Done |
+| Automated checks on every change (GitHub Actions) | Done |
 | Public deploy on Vercel and Neon, live link | Next |
 
 ## After this version
@@ -161,3 +162,15 @@ In rough order of throughput impact:
 4. Image and PDF review with on-image comments.
 5. Deadlines that respect business hours and company holidays.
 6. Rule changes proposed and approved inside the app, with the same audit trail.
+
+## Known limits at larger scale
+
+Comfortable for one compliance team and a few years of history. These are the
+first things to change as volume grows, roughly in the order they'd be hit:
+
+| Limit | When it bites | Fix |
+| --- | --- | --- |
+| The audit download is built in memory and sent in one response | Around 18,000 events, Vercel's response size limit (about 4.5 MB) | Stream the file, or download by date range |
+| The dashboard reads every submission and version, then does the maths in the app | Several thousand submissions | Move the totals into SQL, limited to the dashboard's date range |
+| The queue shows at most 200 rows | More than 200 open reviews at once | Page through results |
+| Rate limits are counted per server instance | Many instances under load, where a busy user could exceed the limit | Keep the counts in a shared store such as Redis |

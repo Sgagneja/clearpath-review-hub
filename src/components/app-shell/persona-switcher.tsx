@@ -36,7 +36,7 @@ function PersonaButton({ persona, current }: { persona: Persona; current: boolea
         <span className="block truncate text-[0.6875rem] text-ink-400">{persona.title}</span>
       </span>
       {isPending ? <LoaderCircle className="size-3.5 animate-spin text-brand-200" aria-hidden="true" /> : null}
-      {current ? <span className="eyebrow shrink-0 text-[0.5625rem] text-brand-200">You</span> : null}
+      {current ? <span className="shrink-0 text-[0.6875rem] font-medium text-brand-200">You</span> : null}
     </button>
   );
 }
@@ -75,7 +75,7 @@ export function PersonaSwitcher({ user, people }: { user: Persona; people: Perso
           <form action={formAction}>
             {ROLES.map((role) => (
               <fieldset key={role} className="mb-1 last:mb-0">
-                <legend className="eyebrow px-2 pb-1 pt-2 text-[0.5625rem] text-ink-400">{ROLE_LABELS[role]}s</legend>
+                <legend className="px-2 pb-1 pt-2 text-[0.6875rem] font-medium text-ink-400">{ROLE_LABELS[role]}s</legend>
                 {people
                   .filter((p) => p.role === role)
                   .map((p) => (
@@ -117,7 +117,7 @@ export function PersonaSwitcher({ user, people }: { user: Persona; people: Perso
           </span>
         </span>
         <ChevronsUpDown className="size-4 shrink-0 text-ink-400" aria-hidden="true" />
-        <span className="sr-only">Switch demo persona</span>
+        <span className="sr-only">Switch person</span>
       </button>
     </div>
   );

@@ -122,7 +122,7 @@ export default async function SpreadsheetImportPage() {
                 {c.allowed ? (
                   <ul className="mt-2 flex flex-wrap gap-1.5" aria-label="Allowed values">
                     {c.allowed.map((v) => (
-                      <li key={v} className="rounded-full bg-ink-50 px-2 py-0.5 text-[0.6875rem] font-medium text-ink-700 ring-1 ring-inset ring-ink-200">
+                      <li key={v} className="rounded-sm bg-ink-50 px-1.5 py-0.5 text-[0.6875rem] font-medium text-ink-700 ring-1 ring-inset ring-ink-200">
                         {v}
                       </li>
                     ))}
@@ -158,8 +158,8 @@ export default async function SpreadsheetImportPage() {
 
 function StepTitle({ n, children }: { n: number; children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-2.5">
-      <span className="inline-flex size-6 items-center justify-center rounded-full bg-ink-900 font-mono text-[0.6875rem] text-white">{n}</span>
+    <span className="inline-flex items-baseline gap-2">
+      <span className="tabular-nums text-ink-400">{n}.</span>
       {children}
     </span>
   );

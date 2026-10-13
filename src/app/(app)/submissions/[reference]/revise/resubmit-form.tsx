@@ -38,7 +38,7 @@ export function ResubmitForm({
         <FormMessage state={state.status === "error" && (bodyError || noteError) ? IDLE : state} />
 
         <div className="space-y-1.5">
-          <Label htmlFor="body">Revised copy (becomes v{currentVersion + 1})</Label>
+          <Label htmlFor="body">Revised copy (becomes version {currentVersion + 1})</Label>
           <Textarea
             id="body"
             name="body"
@@ -74,7 +74,7 @@ export function ResubmitForm({
         <div className="flex justify-end border-t border-line pt-4">
           <SubmitButton variant="brand" pendingLabel="Resubmitting…">
             <Send aria-hidden="true" />
-            Resubmit as v{currentVersion + 1}
+            Resubmit as version {currentVersion + 1}
           </SubmitButton>
         </div>
       </form>

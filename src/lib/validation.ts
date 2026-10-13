@@ -125,7 +125,7 @@ export const assignSchema = z.object({
 });
 
 export const personaSchema = z.object({
-  userId: z.string().regex(/^u_[a-z]+$/, "Unknown demo user."),
+  userId: z.string().regex(/^u_[a-z]+$/, "Choose someone from the list."),
 });
 
 /**

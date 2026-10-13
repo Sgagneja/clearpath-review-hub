@@ -2,11 +2,11 @@ import { ChevronLeft, ChevronRight, Download, Lock } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AccessDenied } from "@/components/access-denied";
-import { AUDIT_ICONS, TONE_STYLES } from "@/components/timeline";
-import { Avatar, SystemAvatar } from "@/components/ui/avatar";
+import { AUDIT_ICONS } from "@/components/timeline";
 import { buttonClasses } from "@/components/ui/button";
+import { Notice } from "@/components/ui/notice";
 import { PageHeader } from "@/components/ui/page-header";
-import { AUDIT_ACTIONS, auditTone } from "@/domain/audit";
+import { AUDIT_ACTIONS, auditTone, type AuditTone } from "@/domain/audit";
 import { authorize, can } from "@/domain/permissions";
 import { ROLE_LABELS } from "@/domain/types";
 import { cn } from "@/lib/cn";
@@ -15,6 +15,7 @@ import { auditFiltersSchema, firstValues, type AuditFilters as Filters } from "@
 import { homePathFor, requireUser } from "@/server/auth";
 import { AUDIT_PAGE_SIZE, getAuditLog } from "@/server/queries/audit";
 import { AuditFilters } from "./audit-filters";
+import { exportProblemMessage } from "./export-problem";
 
 export const metadata: Metadata = { title: "Audit trail" };
 
@@ -32,7 +33,9 @@ export default async function AuditPage({ searchParams }: PageProps<"/audit">) {
   const access = authorize(user, "audit.view");
   if (!access.allowed) return <AccessDenied reason={access.reason} home={homePathFor(user.role)} />;
 
-  const filters = auditFiltersSchema.parse(firstValues(await searchParams));
+  const params = firstValues(await searchParams);
+  const filters = auditFiltersSchema.parse(params);
+  const exportProblem = exportProblemMessage(params.export);
   const log = await getAuditLog(user, filters);
   const canExport = can(user, "audit.export");
   const first = log.total === 0 ? 0 : (log.page - 1) * AUDIT_PAGE_SIZE + 1;
@@ -41,7 +44,6 @@ export default async function AuditPage({ searchParams }: PageProps<"/audit">) {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Compliance · Records"
         title="Audit trail"
         description="Every sign-in, submission, assignment, comment and decision, newest first, ready to hand to an examiner."
         actions={
@@ -66,18 +68,21 @@ export default async function AuditPage({ searchParams }: PageProps<"/audit">) {
         }
       />
 
-      <div className="flex items-start gap-2.5 rounded-xl border border-ink-200 bg-ink-50 px-4 py-3 text-[0.8125rem] text-ink-700">
-        <Lock className="mt-0.5 size-4 shrink-0 text-ink-500" aria-hidden="true" />
-        <p>
-          <strong className="font-semibold text-ink-900">A permanent record.</strong> Once something is recorded here, nobody can edit
-          or delete it, not even Review Hub itself. Downloads are recorded too.
-        </p>
-      </div>
+      {exportProblem ? (
+        <Notice tone="error" role="alert">
+          {exportProblem}
+        </Notice>
+      ) : null}
+
+      <p className="flex items-start gap-2 text-[0.8125rem] text-ink-600">
+        <Lock className="mt-0.5 size-3.5 shrink-0 text-ink-400" aria-hidden="true" />
+        Nothing recorded here can be edited or deleted, not even by Review Hub itself. Downloads are recorded too.
+      </p>
 
       <div className="rounded-xl border border-line bg-white shadow-[var(--shadow-card)]">
         <div className="flex flex-col gap-3 border-b border-line px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
           <AuditFilters q={filters.q} action={filters.action} />
-          <p className="font-mono text-[0.6875rem] text-ink-500">
+          <p className="text-xs tabular-nums text-ink-500">
             {first}–{last} of {log.total}
           </p>
         </div>
@@ -100,7 +105,7 @@ export default async function AuditPage({ searchParams }: PageProps<"/audit">) {
                     </p>
                     <p className="mt-0.5 text-[0.8125rem] text-ink-700">{row.summary}</p>
                     <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5">
-                      <Actor actor={row.actor} role={row.actorRole} size="xs" />
+                      <Actor actor={row.actor} role={row.actorRole} inline />
                       {row.reference ? <ReviewLink reference={row.reference} /> : null}
                       <span className="font-mono text-[0.625rem] tabular-nums text-ink-400">#{eventNumber(row.id)}</span>
                     </div>
@@ -137,7 +142,7 @@ export default async function AuditPage({ searchParams }: PageProps<"/audit">) {
                       </td>
                       <td className="px-3 py-2.5 text-[0.8125rem] text-ink-700">{row.summary}</td>
                       <td className="whitespace-nowrap px-3 py-2.5">
-                        <Actor actor={row.actor} role={row.actorRole} size="sm" />
+                        <Actor actor={row.actor} role={row.actorRole} />
                       </td>
                       <td className="whitespace-nowrap py-2.5 pl-3 pr-5">
                         {row.reference ? <ReviewLink reference={row.reference} /> : <span className="text-ink-300">—</span>}
@@ -153,7 +158,7 @@ export default async function AuditPage({ searchParams }: PageProps<"/audit">) {
         {log.pageCount > 1 ? (
           <nav aria-label="Pagination" className="flex items-center justify-between border-t border-line px-5 py-3">
             <PageLink href={pageHref(filters, log.page - 1)} disabled={log.page <= 1} direction="prev" />
-            <span className="font-mono text-xs text-ink-500">
+            <span className="text-xs tabular-nums text-ink-500">
               Page {log.page} of {log.pageCount}
             </span>
             <PageLink href={pageHref(filters, log.page + 1)} disabled={log.page >= log.pageCount} direction="next" />
@@ -170,32 +175,26 @@ function eventNumber(id: number) {
   return String(id).padStart(5, "0");
 }
 
+const EVENT_TONE: Record<AuditTone, string> = {
+  neutral: "text-ink-500",
+  system: "text-ink-400",
+  positive: "text-approve-600",
+  warning: "text-medium-600",
+  negative: "text-high-600",
+};
+
 function EventIcon({ action }: { action: AuditRow["action"] }) {
   const Icon = AUDIT_ICONS[action];
-  return (
-    <span className={cn("inline-flex size-6 shrink-0 items-center justify-center rounded-full ring-1", TONE_STYLES[auditTone(action)])}>
-      <Icon className="size-3" aria-hidden="true" />
-    </span>
-  );
+  return <Icon className={cn("mt-0.5 size-3.5 shrink-0", EVENT_TONE[auditTone(action)])} aria-hidden="true" />;
 }
 
 /** Who did it. Events with no person were recorded by Review Hub itself, like an automatic pre-check. */
-function Actor({ actor, role, size }: { actor: AuditRow["actor"]; role: AuditRow["actorRole"]; size: "xs" | "sm" }) {
-  if (!actor) {
-    return (
-      <span className="flex items-center gap-2">
-        <SystemAvatar size={size} />
-        <span className="text-[0.8125rem] text-ink-500">Review Hub (automatic)</span>
-      </span>
-    );
-  }
+function Actor({ actor, role, inline }: { actor: AuditRow["actor"]; role: AuditRow["actorRole"]; inline?: boolean }) {
+  if (!actor) return <span className="text-[0.8125rem] text-ink-500">Review Hub (automatic)</span>;
   return (
-    <span className="flex items-center gap-2">
-      <Avatar person={actor} size={size} />
-      <span className={cn(size === "xs" && "flex items-baseline gap-1.5")}>
-        <span className="block text-[0.8125rem] font-medium text-ink-900">{actor.name}</span>
-        {role ? <span className="block text-[0.6875rem] text-ink-500">{ROLE_LABELS[role]}</span> : null}
-      </span>
+    <span className={cn(inline && "flex items-baseline gap-1.5")}>
+      <span className="block text-[0.8125rem] font-medium text-ink-900">{actor.name}</span>
+      {role ? <span className="block text-[0.6875rem] text-ink-500">{ROLE_LABELS[role]}</span> : null}
     </span>
   );
 }

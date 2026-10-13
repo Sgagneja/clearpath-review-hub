@@ -46,7 +46,7 @@ async function currentVersion(tx: Transaction, submissionId: string, version: nu
 }
 
 export function precheckSummary(version: number, result: PrecheckResult): string {
-  return `Pre-check on v${version}: ${pluralize(result.findings.length, "finding")}, risk ${result.score} (${result.level})`;
+  return `Pre-check on version ${version}: ${pluralize(result.findings.length, "finding")}, risk ${result.score} (${result.level})`;
 }
 
 export function precheckDetails(version: number, result: PrecheckResult) {
@@ -139,7 +139,7 @@ export async function startReview(actor: CurrentUser, reference: string) {
     await recordAudit(tx, actor, {
       action: "review.started",
       submission: sub,
-      summary: `${actor.name} started reviewing v${sub.currentVersion}`,
+      summary: `${actor.name} started reviewing version ${sub.currentVersion}`,
       details: { version: sub.currentVersion, previousAssigneeId: sub.assigneeId },
     }, now);
   });
@@ -231,7 +231,7 @@ export async function decide(
     await recordAudit(tx, actor, {
       action: `decision.${outcome}`,
       submission: sub,
-      summary: `${actor.name} ${verb} v${sub.currentVersion}`,
+      summary: `${actor.name} ${verb} version ${sub.currentVersion}`,
       details: {
         version: sub.currentVersion,
         riskScore: version.riskScore,
@@ -253,7 +253,7 @@ export async function resubmit(
     assertCan(actor, "submission.resubmit", sub);
     const previous = await currentVersion(tx, sub.id, sub.currentVersion);
     if (previous.body.trim() === input.body.trim()) {
-      throw new UserFacingError(`The copy is identical to v${previous.version}. Make the requested changes first.`, "body");
+      throw new UserFacingError(`The copy is identical to version ${previous.version}. Make the requested changes first.`, "body");
     }
 
     const status = transition(sub.status, "resubmit");
@@ -301,7 +301,7 @@ export async function resubmit(
     await recordAudit(tx, actor, {
       action: "submission.resubmitted",
       submission: sub,
-      summary: `${actor.name} resubmitted as v${version}`,
+      summary: `${actor.name} resubmitted as version ${version}`,
       details: {
         version,
         riskScore: precheck.score,
@@ -339,7 +339,7 @@ export async function addComment(actor: CurrentUser, input: { reference: string;
     await recordAudit(tx, actor, {
       action: "comment.added",
       submission: sub,
-      summary: `${actor.name} commented on v${sub.currentVersion}`,
+      summary: `${actor.name} commented on version ${sub.currentVersion}`,
       details: { version: sub.currentVersion, excerpt: input.body.slice(0, 140) },
     }, now);
   });

@@ -5,7 +5,6 @@ import { Fragment } from "react";
 import { RiskPill } from "@/components/risk-meter";
 import { SlaIndicator } from "@/components/sla";
 import { StatusBadge } from "@/components/status-badge";
-import { Avatar } from "@/components/ui/avatar";
 import { buttonClasses } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { can } from "@/domain/permissions";
@@ -60,7 +59,6 @@ export default async function QueuePage({ searchParams }: PageProps<"/queue">) {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow={compliance ? "Compliance" : "Marketing"}
         title={compliance ? "Review queue" : "My submissions"}
         description={
           compliance
@@ -142,39 +140,35 @@ export default async function QueuePage({ searchParams }: PageProps<"/queue">) {
 }
 
 function SummaryStrip({ summary, compliance, filters }: { summary: QueueSummary; compliance: boolean; filters: Filters }) {
-  const tiles = compliance
+  const items = compliance
     ? [
-        { label: "Active reviews", value: summary.active, hint: "Awaiting or in review", href: queueHref(filters, { status: "open", sort: "sla", dir: "asc" }) },
-        { label: "Overdue", value: summary.overdue, hint: "Past their review deadline", tone: summary.overdue ? "high" : undefined, href: queueHref(filters, { status: "open", sort: "sla", dir: "asc" }) },
-        { label: "Due within 12h", value: summary.dueSoon, hint: "Pick these up next", tone: summary.dueSoon ? "medium" : undefined, href: queueHref(filters, { status: "open", sort: "sla", dir: "asc" }) },
-        { label: "Launch at risk", value: summary.launchAtRisk, hint: "Deadline is on or after launch day", tone: summary.launchAtRisk ? "medium" : undefined, href: queueHref(filters, { status: "open", sort: "launch", dir: "asc" }) },
-        { label: "Unassigned", value: summary.unassigned, hint: "No reviewer yet", href: queueHref(filters, { status: "submitted", assignee: "unassigned" }) },
+        { label: "open", value: summary.active, href: queueHref(filters, { status: "open", sort: "sla", dir: "asc" }) },
+        { label: "overdue", value: summary.overdue, tone: summary.overdue ? "high" : undefined, href: queueHref(filters, { status: "open", sort: "sla", dir: "asc" }) },
+        { label: "due within 12 hours", value: summary.dueSoon, tone: summary.dueSoon ? "medium" : undefined, href: queueHref(filters, { status: "open", sort: "sla", dir: "asc" }) },
+        { label: summary.launchAtRisk === 1 ? "launch at risk" : "launches at risk", value: summary.launchAtRisk, tone: summary.launchAtRisk ? "medium" : undefined, href: queueHref(filters, { status: "open", sort: "launch", dir: "asc" }) },
+        { label: "unassigned", value: summary.unassigned, href: queueHref(filters, { status: "submitted", assignee: "unassigned" }) },
       ]
     : [
-        { label: "With compliance", value: summary.active, hint: "Awaiting or in review", href: queueHref(filters, { status: "open" }) },
-        { label: "Needs your changes", value: summary.byStatus.changes_requested, hint: "Sent back to you", tone: summary.byStatus.changes_requested ? "medium" : undefined, href: queueHref(filters, { status: "changes_requested" }) },
-        { label: "Approved", value: summary.byStatus.approved, hint: "Cleared to launch", href: queueHref(filters, { status: "approved" }) },
-        { label: "Rejected", value: summary.byStatus.rejected, hint: "Can't run as written", href: queueHref(filters, { status: "rejected" }) },
+        { label: "with compliance", value: summary.active, href: queueHref(filters, { status: "open" }) },
+        { label: "need your changes", value: summary.byStatus.changes_requested, tone: summary.byStatus.changes_requested ? "medium" : undefined, href: queueHref(filters, { status: "changes_requested" }) },
+        { label: "approved", value: summary.byStatus.approved, href: queueHref(filters, { status: "approved" }) },
+        { label: "rejected", value: summary.byStatus.rejected, href: queueHref(filters, { status: "rejected" }) },
       ];
 
   return (
-    <ul className={cn("grid grid-cols-2 gap-3", compliance ? "lg:grid-cols-5" : "lg:grid-cols-4")}>
-      {tiles.map((tile, i) => (
-        <li key={tile.label} className={cn(compliance && i === 0 && "col-span-2 lg:col-span-1")}>
-          <Link
-            href={tile.href}
-            className="group block h-full rounded-xl border border-line bg-white px-4 py-3.5 shadow-[var(--shadow-card)] transition-colors hover:border-line-strong"
-          >
-            <p className="eyebrow text-ink-500">{tile.label}</p>
-            <p
+    <ul aria-label="At a glance" className="flex flex-wrap items-baseline gap-x-7 gap-y-2 border-y border-line py-3">
+      {items.map((item) => (
+        <li key={item.label}>
+          <Link href={item.href} className="group inline-flex items-baseline gap-1.5">
+            <span
               className={cn(
-                "mt-1 font-serif text-[2rem] leading-none tabular-nums",
-                tile.tone === "high" ? "text-high-700" : tile.tone === "medium" ? "text-medium-700" : "text-ink-950",
+                "text-xl font-semibold leading-none tabular-nums tracking-[-0.02em]",
+                item.tone === "high" ? "text-high-700" : item.tone === "medium" ? "text-medium-700" : "text-ink-950",
               )}
             >
-              {tile.value}
-            </p>
-            <p className="mt-1.5 text-xs text-ink-500">{tile.hint}</p>
+              {item.value}
+            </span>
+            <span className="text-sm text-ink-600 underline-offset-4 group-hover:text-ink-950 group-hover:underline">{item.label}</span>
           </Link>
         </li>
       ))}
@@ -202,7 +196,7 @@ function StatusTabs({ filters, counts }: { filters: Filters; counts: QueueSummar
                 )}
               >
                 {label}
-                <span className={cn("font-mono text-[0.6875rem]", active ? "text-ink-300" : "text-ink-400")}>{counts[tab]}</span>
+                <span className={cn("text-xs tabular-nums", active ? "text-ink-300" : "text-ink-400")}>{counts[tab]}</span>
               </Link>
             </li>
           );
@@ -315,8 +309,8 @@ function SubmissionDetails({ row, compliance }: { row: QueueRow; compliance: boo
     compliance && row.submitter ? row.submitter.name : null,
   ].filter((part) => part !== null);
   return (
-    <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 font-mono text-[0.6875rem] text-ink-500">
-      <span className="text-ink-700">{row.reference}</span>
+    <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-ink-500">
+      <span className="font-mono text-[0.6875rem] text-ink-700">{row.reference}</span>
       {parts.map((part) => (
         <Fragment key={part}>
           <span aria-hidden="true">·</span>
@@ -329,9 +323,8 @@ function SubmissionDetails({ row, compliance }: { row: QueueRow; compliance: boo
 
 function Assignee({ person }: { person: QueueRow["assignee"] }) {
   return (
-    <span className={cn("inline-flex max-w-full items-center gap-2 whitespace-nowrap text-[0.8125rem]", person ? "text-ink-800" : "text-ink-400")}>
-      <Avatar person={person} size="sm" />
-      <span className="truncate">{person ? person.name : "Unassigned"}</span>
+    <span className={cn("block max-w-full truncate whitespace-nowrap text-[0.8125rem]", person ? "text-ink-800" : "italic text-ink-400")}>
+      {person ? person.name : "Unassigned"}
     </span>
   );
 }
@@ -370,11 +363,11 @@ function QueueTableRow({ row, now, compliance }: { row: QueueRow; now: Date; com
             Launch at risk
           </span>
         ) : null}
-        <span className="mt-1 block font-mono text-[0.6875rem] text-ink-400 2xl:hidden">
+        <span className="mt-1 block text-xs text-ink-400 2xl:hidden">
           Updated <span className="whitespace-nowrap">{formatRelative(row.updatedAt, now)}</span>
         </span>
       </td>
-      <td className="hidden whitespace-nowrap py-3 pl-3 pr-5 font-mono text-[0.6875rem] text-ink-500 2xl:table-cell">
+      <td className="hidden whitespace-nowrap py-3 pl-3 pr-5 text-xs text-ink-500 2xl:table-cell">
         {formatRelative(row.updatedAt, now)}
       </td>
     </tr>
@@ -384,10 +377,8 @@ function QueueTableRow({ row, now, compliance }: { row: QueueRow; now: Date; com
 function EmptyQueue({ filtered, compliance }: { filtered: boolean; compliance: boolean }) {
   return (
     <div className="flex flex-col items-center px-6 py-16 text-center">
-      <span className="inline-flex size-11 items-center justify-center rounded-full bg-paper text-ink-400 ring-1 ring-line">
-        <Inbox className="size-5" aria-hidden="true" />
-      </span>
-      <p className="mt-4 font-medium text-ink-900">{filtered ? "Nothing matches these filters" : compliance ? "The queue is clear" : "No submissions yet"}</p>
+      <Inbox className="size-6 text-ink-300" aria-hidden="true" />
+      <p className="mt-3 font-medium text-ink-900">{filtered ? "Nothing matches these filters" : compliance ? "The queue is clear" : "No submissions yet"}</p>
       <p className="mt-1 max-w-sm text-sm text-ink-500">
         {filtered
           ? "Try a different status or clear the filters."

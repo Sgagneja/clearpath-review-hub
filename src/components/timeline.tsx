@@ -104,7 +104,7 @@ function CommentItem({ item }: { item: Extract<TimelineItem, { kind: "comment" }
             <span className="font-semibold text-ink-900">{item.author?.name ?? "Former user"}</span>
             {item.author ? <span className="text-xs text-ink-500">{ROLE_LABELS[item.author.role]}</span> : null}
             <span className="font-mono text-[0.6875rem] text-ink-400">
-              v{item.version} · <time dateTime={item.at.toISOString()}>{formatDateTime(item.at)}</time>
+              Version {item.version} · <time dateTime={item.at.toISOString()}>{formatDateTime(item.at)}</time>
             </span>
           </p>
           <p className="mt-1 whitespace-pre-wrap text-[0.875rem] leading-relaxed text-ink-800">{item.body}</p>

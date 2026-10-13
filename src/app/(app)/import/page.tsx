@@ -21,7 +21,6 @@ export default async function ImportPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        eyebrow="Import"
         title="Bring your reviews into one place"
         description="Move the work still sitting in Excel and the compliance inbox into Review Hub. Open requests join the queue with their real deadlines, and past decisions become history you can search and report on."
       />
@@ -83,10 +82,8 @@ function Choice({ href, icon: Icon, title, body, meta, cta }: { href: string; ic
       href={href}
       className="group relative flex flex-col rounded-xl border border-line bg-white p-6 shadow-[var(--shadow-card)] transition-colors hover:border-brand-300"
     >
-      <span className="inline-flex size-11 items-center justify-center rounded-xl bg-brand-50 text-brand-700 ring-1 ring-inset ring-brand-100">
-        <Icon className="size-5" aria-hidden="true" />
-      </span>
-      <h2 className="mt-5 font-serif text-[1.375rem] font-medium leading-snug text-ink-950">{title}</h2>
+      <Icon className="size-6 text-brand-700" strokeWidth={1.75} aria-hidden="true" />
+      <h2 className="mt-4 text-lg font-semibold leading-snug tracking-[-0.01em] text-ink-950">{title}</h2>
       <p className="mt-2 flex-1 text-[0.875rem] leading-relaxed text-ink-600">{body}</p>
       <div className="mt-6 flex items-center justify-between gap-3 border-t border-line pt-4">
         <span className="text-xs text-ink-500">{meta}</span>

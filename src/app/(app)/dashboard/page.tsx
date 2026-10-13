@@ -4,9 +4,8 @@ import Link from "next/link";
 import { AccessDenied } from "@/components/access-denied";
 import { SeverityGlyph } from "@/components/severity";
 import { SlaIndicator } from "@/components/sla";
-import { Avatar } from "@/components/ui/avatar";
 import { buttonClasses } from "@/components/ui/button";
-import { Card, CardBody, CardHeader } from "@/components/ui/card";
+import { Card, CardBody, CardHeader, CardNote } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { STAGE_LABELS } from "@/domain/metrics";
 import { authorize } from "@/domain/permissions";
@@ -30,7 +29,7 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow={`Compliance · ${formatShortDate(data.weeks[0].weekStart)} – ${formatShortDate(now)}`}
+        context={`${formatShortDate(data.weeks[0].weekStart)} – ${formatShortDate(now)}`}
         title="Review throughput"
         description="How fast copy moves from submission to decision, where it waits, and which guidelines marketing trips over most."
         actions={
@@ -80,30 +79,32 @@ function Kpis({ data }: { data: Dashboard }) {
     },
   ];
 
+  // One sheet of figures. The 1px gaps over a line-coloured background draw the
+  // rules between cells, whether they sit four across or two by two.
   return (
-    <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <ul className="grid gap-px overflow-hidden rounded-xl border border-line bg-line shadow-[var(--shadow-card)] sm:grid-cols-2 xl:grid-cols-4">
       {tiles.map((t) => (
-        <li key={t.label} className="rounded-xl border border-line bg-white px-5 py-4 shadow-[var(--shadow-card)]">
+        <li key={t.label} className="bg-white px-5 py-4">
           <p className="eyebrow text-ink-500">{t.label}</p>
-          <p className="mt-2 font-serif text-[2.5rem] leading-none tracking-[-0.01em] text-ink-950 tabular-nums">{t.value}</p>
+          <p className="figure mt-1.5">{t.value}</p>
           {t.bar !== undefined && t.bar !== null ? (
             <div className="mt-3 h-1 overflow-hidden rounded-full bg-ink-100" aria-hidden="true">
               <div className="h-full rounded-full bg-brand-500" style={{ width: `${Math.round(t.bar * 100)}%` }} />
             </div>
           ) : null}
-          <p className="mt-2.5 text-xs text-ink-500">{t.note}</p>
+          <p className="mt-2 text-xs text-ink-500">{t.note}</p>
         </li>
       ))}
-      <li className="rounded-xl border border-line bg-ink-950 px-5 py-4 text-white shadow-[var(--shadow-card)]">
-        <p className="eyebrow text-ink-400">Open with compliance</p>
-        <p className="mt-2 flex items-baseline gap-3 font-serif text-[2.5rem] leading-none tabular-nums">
-          {totals.active}
-          <span className="font-sans text-sm text-ink-300">
+      <li className="bg-white px-5 py-4">
+        <p className="eyebrow text-ink-500">Open with compliance</p>
+        <p className="mt-1.5 flex items-baseline gap-3">
+          <span className="figure">{totals.active}</span>
+          <span className="text-sm">
             <span className="sr-only">open, </span>
-            {totals.overdue ? <span className="font-semibold text-high-200">{totals.overdue} overdue</span> : "none overdue"}
+            {totals.overdue ? <span className="font-semibold text-high-700">{totals.overdue} overdue</span> : <span className="text-ink-500">none overdue</span>}
           </span>
         </p>
-        <div className="mt-3 flex h-1.5 overflow-hidden rounded-full bg-white/10" aria-label={`${totals.activeByRisk.high} high, ${totals.activeByRisk.medium} medium, ${totals.activeByRisk.low} low risk`} role="img">
+        <div className="mt-3 flex h-1 overflow-hidden rounded-full bg-ink-100" aria-label={`${totals.activeByRisk.high} high, ${totals.activeByRisk.medium} medium, ${totals.activeByRisk.low} low risk`} role="img">
           {SEVERITIES.map((s) => (
             <span
               key={s}
@@ -112,7 +113,7 @@ function Kpis({ data }: { data: Dashboard }) {
             />
           ))}
         </div>
-        <p className="mt-2.5 flex flex-wrap gap-x-3 text-xs text-ink-300">
+        <p className="mt-2 flex flex-wrap gap-x-3 text-xs text-ink-500">
           {SEVERITIES.map((s) => (
             <span key={s} className="inline-flex items-center gap-1">
               <SeverityGlyph severity={s} className="size-2" />
@@ -138,27 +139,21 @@ function ThroughputChart({ weeks }: { weeks: Dashboard["weeks"] }) {
   ] as const;
 
   return (
-    <Card aria-labelledby="throughput-title">
-      <CardHeader
-        titleId="throughput-title"
-        title="Decisions per week"
-        description="Every review round counts, including ones sent back for changes. The marker shows new submissions."
-        action={
-          <ul className="hidden flex-wrap gap-3 text-xs text-ink-600 sm:flex">
-            {series.map((s) => (
-              <li key={s.key} className="inline-flex items-center gap-1.5">
-                <span className={cn("size-2 rounded-sm", s.className)} aria-hidden="true" />
-                {s.label}
-              </li>
-            ))}
-            <li className="inline-flex items-center gap-1.5">
-              <span className="h-0.5 w-3 rounded-full bg-ink-900" aria-hidden="true" />
-              Intake
+    <Card aria-labelledby="throughput-title" className="flex flex-col">
+      <CardHeader titleId="throughput-title" title="Decisions per week" />
+      <CardBody className="flex-1">
+        <ul aria-hidden="true" className="mb-5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-600">
+          {series.map((s) => (
+            <li key={s.key} className="inline-flex items-center gap-1.5">
+              <span className={cn("size-2 rounded-sm", s.className)} />
+              {s.label}
             </li>
-          </ul>
-        }
-      />
-      <CardBody>
+          ))}
+          <li className="inline-flex items-center gap-1.5">
+            <span className="h-0.5 w-3 rounded-full bg-ink-900" />
+            New submissions
+          </li>
+        </ul>
         <div className="relative h-56 2xl:h-72" aria-hidden="true">
           {[0, ...ticks].map((tick) => (
             <span
@@ -221,6 +216,7 @@ function ThroughputChart({ weeks }: { weeks: Dashboard["weeks"] }) {
           </table>
         </div>
       </CardBody>
+      <CardNote>Every review round counts, including ones sent back for changes.</CardNote>
     </Card>
   );
 }
@@ -228,9 +224,9 @@ function ThroughputChart({ weeks }: { weeks: Dashboard["weeks"] }) {
 function StageChart({ data }: { data: Dashboard }) {
   const max = Math.max(1, ...data.stages.map((s) => s.meanHours ?? 0));
   return (
-    <Card aria-labelledby="stages-title">
-      <CardHeader titleId="stages-title" title="Where work waits" description="Average time per review round in each stage, open rounds included." />
-      <CardBody className="space-y-5">
+    <Card aria-labelledby="stages-title" className="flex flex-col">
+      <CardHeader titleId="stages-title" title="Where work waits" />
+      <CardBody className="flex-1 space-y-5">
         {data.stages.map((stage) => {
           const isBottleneck = data.bottleneck?.stage === stage.stage;
           return (
@@ -239,8 +235,8 @@ function StageChart({ data }: { data: Dashboard }) {
                 <p className="flex items-center gap-2 text-[0.8125rem] font-medium text-ink-800">
                   {STAGE_LABELS[stage.stage]}
                   {isBottleneck ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-medium-50 px-1.5 py-px text-[0.625rem] font-semibold uppercase tracking-wide text-medium-800 ring-1 ring-inset ring-medium-200">
-                      <Hourglass className="size-2.5" aria-hidden="true" /> Bottleneck
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-medium-700">
+                      <Hourglass className="size-3" aria-hidden="true" /> Slowest stage
                     </span>
                   ) : null}
                 </p>
@@ -257,15 +253,16 @@ function StageChart({ data }: { data: Dashboard }) {
           );
         })}
         {data.bottleneck ? (
-          <p className="rounded-lg bg-paper px-3 py-2.5 text-[0.8125rem] leading-relaxed text-ink-700">
+          <p className="border-t border-line pt-4 text-[0.8125rem] leading-relaxed text-ink-700">
             {data.bottleneck.stage === "awaiting_pickup"
-              ? "Most of the wait is before anyone opens the asset. Assigning on arrival would cut cycle time more than faster reviews."
+              ? "Most of the wait is before anyone opens the asset. Assigning on arrival would cut turnaround more than faster reviews."
               : data.bottleneck.stage === "in_review"
                 ? "Reviews themselves take the longest. Check reviewer workload below before tightening deadlines."
-                : "Revisions are the slow part. The top rules below are where marketing needs better templates."}
+                : "Revisions are the slow part. The most common findings below are where marketing needs better templates."}
           </p>
         ) : null}
       </CardBody>
+      <CardNote>Average time per review round, open reviews included.</CardNote>
     </Card>
   );
 }
@@ -275,8 +272,7 @@ function Attention({ data, now }: { data: Dashboard; now: Date }) {
     <Card aria-labelledby="attention-title">
       <CardHeader
         titleId="attention-title"
-        title="Needs attention"
-        description="Open reviews closest to, or past, their deadline."
+        title="Closest to the deadline"
         action={
           <Link href="/queue" className="text-[0.8125rem] font-medium text-brand-700 hover:underline">
             Full queue
@@ -301,8 +297,7 @@ function Attention({ data, now }: { data: Dashboard; now: Date }) {
                   {item.launchAtRisk ? <span className="font-sans font-semibold text-medium-700">· launch at risk</span> : null}
                 </p>
               </div>
-              <span className="hidden items-center gap-1.5 text-xs text-ink-600 sm:inline-flex">
-                <Avatar person={item.assignee} size="xs" />
+              <span className={cn("hidden w-20 truncate text-xs sm:block", item.assignee ? "text-ink-600" : "italic text-ink-400")}>
                 {item.assignee?.name.split(" ")[0] ?? "Unassigned"}
               </span>
               <div className="w-36 shrink-0">
@@ -323,7 +318,6 @@ function Workload({ data }: { data: Dashboard }) {
       <CardHeader
         titleId="workload-title"
         title="Reviewer workload"
-        description="Open assignments right now, decisions to date, and how long a review typically takes."
       />
       <div className="relative overflow-x-auto">
         <table className="w-full text-left text-sm">
@@ -347,13 +341,8 @@ function Workload({ data }: { data: Dashboard }) {
             {data.workload.map((w) => (
               <tr key={w.reviewerId}>
                 <td className="py-2.5 pl-4 pr-3 sm:pl-5">
-                  <span className="flex items-center gap-2.5">
-                    <Avatar person={w.reviewer} size="sm" />
-                    <span className="min-w-0">
-                      <span className="block truncate font-medium text-ink-900">{w.reviewer.name}</span>
-                      <span className="block truncate text-[0.6875rem] text-ink-500">{ROLE_LABELS[w.reviewer.role]}</span>
-                    </span>
-                  </span>
+                  <span className="block truncate font-medium text-ink-900">{w.reviewer.name}</span>
+                  <span className="block truncate text-[0.6875rem] text-ink-500">{ROLE_LABELS[w.reviewer.role]}</span>
                 </td>
                 <td className="px-3 py-2.5">
                   <span className="flex items-center gap-2">
@@ -370,6 +359,7 @@ function Workload({ data }: { data: Dashboard }) {
           </tbody>
         </table>
       </div>
+      <CardNote>Review time is the typical time from starting a review to deciding it.</CardNote>
     </Card>
   );
 }
@@ -381,7 +371,6 @@ function TopRules({ data }: { data: Dashboard }) {
       <CardHeader
         titleId="rules-title"
         title="What first drafts get wrong"
-        description={`What the pre-check flagged on first versions, across ${pluralize(data.totals.submissions, "submission")}. This is the training list for marketing.`}
         action={
           <Link href="/rules" className="text-[0.8125rem] font-medium text-brand-700 hover:underline">
             Rule library
@@ -389,10 +378,10 @@ function TopRules({ data }: { data: Dashboard }) {
         }
       />
       <CardBody>
-        <ol className="grid gap-x-10 gap-y-4 md:grid-cols-2">
+        <ol className="grid grid-cols-1 gap-x-10 gap-y-4 md:grid-cols-2">
           {data.topRules.map((rule, i) => (
             <li key={rule.ruleId} className="flex gap-3">
-              <span className="w-5 shrink-0 pt-0.5 font-serif text-lg leading-none text-ink-300">{i + 1}</span>
+              <span className="w-5 shrink-0 text-[0.8125rem] font-semibold tabular-nums text-ink-300">{i + 1}</span>
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline justify-between gap-3">
                   <p className="flex min-w-0 items-center gap-1.5 text-[0.8125rem] font-medium text-ink-900">
@@ -412,6 +401,9 @@ function TopRules({ data }: { data: Dashboard }) {
           ))}
         </ol>
       </CardBody>
+      <CardNote>
+        Findings on first versions across {pluralize(data.totals.submissions, "submission")}. This is the training list for marketing.
+      </CardNote>
     </Card>
   );
 }

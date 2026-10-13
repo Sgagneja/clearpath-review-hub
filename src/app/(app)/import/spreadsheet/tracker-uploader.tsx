@@ -123,10 +123,8 @@ function DropZone({ inputRef, onChoose }: { inputRef: React.RefObject<HTMLInputE
         aria-describedby="upload-rules"
         onChange={(e) => onChoose(e.target.files?.[0])}
       />
-      <span className="inline-flex size-12 items-center justify-center rounded-full bg-paper text-ink-500 ring-1 ring-line">
-        <Upload className="size-5" aria-hidden="true" />
-      </span>
-      <span className="mt-4 text-[0.9375rem] font-semibold text-ink-950">
+      <Upload className="size-6 text-ink-400" strokeWidth={1.75} aria-hidden="true" />
+      <span className="mt-3 text-[0.9375rem] font-semibold text-ink-950">
         Drop your tracker here, or <span className="text-brand-700 underline underline-offset-2">choose a file</span>
       </span>
       <span id="upload-rules" className="mt-1 text-[0.8125rem] text-ink-500">
@@ -272,7 +270,7 @@ function ReadyView({ preview, importing, onImport, onStartOver }: { preview: Rea
         {STATUSES.map((s) => (
           <div key={s} className="bg-white px-5 py-3 max-sm:last:col-span-2">
             <dt className="text-xs text-ink-500">{STATUS_LABELS[s]}</dt>
-            <dd className="mt-0.5 font-serif text-2xl leading-none tabular-nums text-ink-950">{preview.byStatus[s]}</dd>
+            <dd className="figure mt-1 text-2xl">{preview.byStatus[s]}</dd>
           </div>
         ))}
       </dl>

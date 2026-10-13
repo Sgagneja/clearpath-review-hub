@@ -18,7 +18,7 @@ export function RiskRuler({ score, level, className }: { score: number; level: R
   return (
     <div className={cn("flex items-center gap-4", className)}>
       <div className="flex shrink-0 flex-col">
-        <span className={cn("font-serif text-[2.5rem] leading-none tabular-nums", SEVERITY_TEXT[level])}>{score}</span>
+        <span className={cn("figure text-[2.25rem]", SEVERITY_TEXT[level])}>{score}</span>
         <span className="mt-1 flex items-center gap-1.5 text-xs font-medium text-ink-600">
           <SeverityGlyph severity={level} />
           {LEVEL_LABEL[level]}

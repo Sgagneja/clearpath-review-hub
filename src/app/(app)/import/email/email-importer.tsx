@@ -169,7 +169,7 @@ function AddEmail({ sample, onRead }: { sample: string; onRead: (email: ParsedEm
                     setProblem(null);
                     pasteRef.current?.focus();
                   }}
-                  className="rounded-full border border-line-strong bg-paper px-2.5 py-1 text-xs font-medium text-ink-700 transition-colors hover:border-ink-300 hover:text-ink-950"
+                  className="rounded-md border border-line-strong bg-paper px-2.5 py-1 text-xs font-medium text-ink-700 transition-colors hover:border-ink-300 hover:text-ink-950"
                 >
                   Try an example email
                 </button>
@@ -222,10 +222,12 @@ function AddEmail({ sample, onRead }: { sample: string; onRead: (email: ParsedEm
                     e.target.value = "";
                   }}
                 />
-                <span className="inline-flex size-12 items-center justify-center rounded-full bg-paper text-ink-500 ring-1 ring-line">
-                  {reading ? <LoaderCircle className="size-5 animate-spin" aria-hidden="true" /> : <Upload className="size-5" aria-hidden="true" />}
-                </span>
-                <span className="mt-4 text-[0.9375rem] font-semibold text-ink-950">
+                {reading ? (
+                  <LoaderCircle className="size-6 animate-spin text-ink-400" aria-hidden="true" />
+                ) : (
+                  <Upload className="size-6 text-ink-400" strokeWidth={1.75} aria-hidden="true" />
+                )}
+                <span className="mt-3 text-[0.9375rem] font-semibold text-ink-950">
                   {reading ? (
                     "Reading the email…"
                   ) : (
@@ -604,7 +606,7 @@ function Section({
 /** Marks a field we filled in from the email, so it's clear what to double-check. */
 function FromEmail({ what = "email" }: { what?: string }) {
   return (
-    <span className="rounded-full bg-brand-50 px-1.5 py-px text-[0.6875rem] font-medium text-brand-700 ring-1 ring-inset ring-brand-100">
+    <span className="rounded-sm bg-brand-50 px-1.5 py-px text-[0.6875rem] font-medium text-brand-700 ring-1 ring-inset ring-brand-100">
       from the {what}
     </span>
   );

@@ -142,7 +142,7 @@ export function ResolvedFindings({ findings, sinceVersion }: { findings: Finding
   return (
     <div className="rounded-lg border border-approve-100 bg-approve-50/60 px-4 py-3">
       <p className="text-[0.8125rem] font-semibold text-approve-700">
-        Resolved since v{sinceVersion} · {findings.length}
+        Fixed since version {sinceVersion} · {findings.length}
       </p>
       <ul className="mt-1.5 space-y-1">
         {findings.map((f) => (

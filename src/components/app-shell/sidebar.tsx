@@ -1,4 +1,3 @@
-import { FlaskConical } from "lucide-react";
 import Link from "next/link";
 import { can } from "@/domain/permissions";
 import type { CurrentUser } from "@/server/auth";
@@ -27,11 +26,8 @@ function navItems(user: CurrentUser, queueCount: number): NavItem[] {
 
 function DemoNote() {
   return (
-    <p className="flex items-start gap-2 rounded-lg bg-brand-500/10 px-3 py-2 text-[0.6875rem] leading-relaxed text-brand-100 ring-1 ring-inset ring-brand-400/20">
-      <FlaskConical className="mt-0.5 size-3.5 shrink-0 text-brand-300" aria-hidden="true" />
-      <span>
-        Demo environment. ClearPath Financial and all data are fictional. Switch personas below to see each role.
-      </span>
+    <p className="px-2 text-[0.6875rem] leading-relaxed text-ink-400">
+      Demo. ClearPath Financial and everything in it is made up. Switch person below to see another role.
     </p>
   );
 }
@@ -53,7 +49,9 @@ export function Sidebar({ user, people, queueCount }: { user: CurrentUser; peopl
           </div>
         }
       />
-      <aside className="sticky top-0 hidden h-screen flex-col bg-ink-950 lg:flex">
+      {/* The wrapper fills the grid row so the dark column runs the full page; the menu sticks inside it. */}
+      <div className="hidden bg-ink-950 lg:block">
+      <aside className="sticky top-0 flex h-screen flex-col">
         <div className="px-5 pb-6 pt-6">
           <Link href="/" className="inline-block rounded-md">
             <Logo />
@@ -61,7 +59,6 @@ export function Sidebar({ user, people, queueCount }: { user: CurrentUser; peopl
           </Link>
         </div>
         <nav aria-label="Main" className="flex-1 overflow-y-auto px-3 scrollbar-thin">
-          <p className="eyebrow px-3 pb-2 text-[0.5625rem] text-ink-500">Workspace</p>
           <NavLinks items={items} />
         </nav>
         <div className="space-y-3 border-t border-white/[0.06] p-3">
@@ -69,6 +66,7 @@ export function Sidebar({ user, people, queueCount }: { user: CurrentUser; peopl
           {switcher}
         </div>
       </aside>
+      </div>
     </>
   );
 }

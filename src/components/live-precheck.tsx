@@ -50,9 +50,7 @@ export function LivePrecheck({
           <ScanSearch className="size-4 text-brand-600" aria-hidden="true" />
           Live pre-check
         </h2>
-        <span className="font-mono text-[0.625rem] text-ink-400">
-          {result.rulesEvaluated} rules · v{result.engineVersion}
-        </span>
+        <span className="text-xs text-ink-400">{pluralize(result.rulesEvaluated, "check")}</span>
       </header>
 
       <div className="space-y-4 px-5 py-4" aria-live="polite" aria-atomic="false">
@@ -65,14 +63,14 @@ export function LivePrecheck({
               {SEVERITIES.map((s) => (
                 <span key={s} className="inline-flex items-center gap-1.5">
                   <SeverityGlyph severity={s} />
-                  <span className="font-mono tabular-nums">{counts[s]}</span> {s}
+                  <span className="tabular-nums">{counts[s]}</span> {s}
                 </span>
               ))}
             </div>
             {delta && previousVersion ? (
               <p className="rounded-md bg-paper px-3 py-2 text-[0.8125rem] text-ink-700">
-                Compared with v{previousVersion}:{" "}
-                <strong className="font-semibold text-approve-700">{delta.resolved.length} resolved</strong>,{" "}
+                Compared with version {previousVersion}:{" "}
+                <strong className="font-semibold text-approve-700">{delta.resolved.length} fixed</strong>,{" "}
                 <strong className={cn("font-semibold", delta.introduced.length ? "text-high-700" : "text-ink-700")}>
                   {delta.introduced.length} new
                 </strong>
@@ -126,7 +124,7 @@ export function LivePrecheck({
 
       <footer className="rounded-b-xl border-t border-line bg-paper/60 px-5 py-3 text-xs leading-relaxed text-ink-500">
         {empty
-          ? "Review SLA is set by risk: 48h high, 72h medium, 120h low."
+          ? "The review deadline is set by risk: 48 hours for high, 72 for medium, 120 for low."
           : `If you submit now: ${pluralize(result.findings.length, "finding")}, ${result.level} risk, reviewed within ${SLA_HOURS[result.level]} hours.`}{" "}
         Compliance re-runs the same check on submit.
       </footer>

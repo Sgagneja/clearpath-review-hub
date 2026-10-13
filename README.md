@@ -117,12 +117,15 @@ is added with `vercel env add SESSION_SECRET`.
 | `npm run dev` | Start the app with live reload |
 | `npm run build` / `npm start` | Production build and server |
 | `npm run check` | Lint, type-check and unit tests in one go |
-| `npm test` | Unit tests (Vitest, 265 tests) |
+| `npm test` | Unit tests (Vitest, 267 tests) |
 | `npm run test:layout` | Signs in as each role and checks every page fits phone, tablet, laptop, desktop and 2560px screens (Playwright) |
 | `npm run docs:screenshots` | Regenerates the screenshots in this README (run `npm run db:seed` first) |
 | `npm run db:generate` | Write a new migration after changing `src/db/schema.ts` |
 | `npm run db:migrate` | Apply migrations |
 | `npm run db:seed` | Reset the database to the demo data. Asks for `--yes` against anything that isn't local; `--dry-run` previews |
+
+GitHub Actions runs the checks, the production build and the layout test on every push
+([`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
 
 ### How the code is organised
 
@@ -130,7 +133,7 @@ is added with `vercel env add SESSION_SECRET`.
 src/
   app/                 Pages and routes (Next.js App Router)
     (app)/             Signed-in pages: queue, submissions, dashboard, import, audit, rules
-    login/             Persona picker
+    login/             Demo sign-in: pick a person from the team
   components/          Shared UI: app shell, findings, redline, deadline indicator, form parts
   domain/              The business rules as plain, unit-tested functions:
                        workflow states, deadlines, risk scoring, permissions, metrics,

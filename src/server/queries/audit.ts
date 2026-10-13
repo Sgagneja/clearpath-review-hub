@@ -96,7 +96,7 @@ export async function exportAuditCsv(actor: CurrentUser, now = new Date()) {
       isAuditAction(r.action) ? AUDIT_ACTIONS[r.action] : r.action,
       r.reference,
       r.actorId ?? "system",
-      directory.get(r.actorId)?.name ?? "ClearPath pre-check",
+      directory.get(r.actorId)?.name ?? "Review Hub (automatic)",
       r.actorRole ? ROLE_LABELS[r.actorRole] : "System",
       r.summary,
       JSON.stringify(r.details),

@@ -128,14 +128,14 @@ function plan(scenario: SeedScenario, now: Date): PlannedSubmission {
       summary:
         version === 1
           ? `${userName(submitter)} submitted “${scenario.title}”`
-          : `${userName(submitter)} resubmitted as v${version}`,
+          : `${userName(submitter)} resubmitted as version ${version}`,
       details: { version, riskScore: precheck.score, riskLevel: precheck.level },
     });
     events.push({
       occurredAt: new Date(submittedAt.getTime() + 1500),
       actorId: null,
       action: "precheck.completed",
-      summary: `Pre-check on v${version}: ${precheck.findings.length} finding${
+      summary: `Pre-check on version ${version}: ${precheck.findings.length} finding${
         precheck.findings.length === 1 ? "" : "s"
       }, risk ${precheck.score} (${precheck.level})`,
       details: {
@@ -163,7 +163,7 @@ function plan(scenario: SeedScenario, now: Date): PlannedSubmission {
         occurredAt: reviewStartedAt,
         actorId: seed.reviewer,
         action: "review.started",
-        summary: `${userName(seed.reviewer)} started reviewing v${version}`,
+        summary: `${userName(seed.reviewer)} started reviewing version ${version}`,
         details: { version },
       });
     }
@@ -174,7 +174,7 @@ function plan(scenario: SeedScenario, now: Date): PlannedSubmission {
         occurredAt: createdAtComment,
         actorId: c.author,
         action: "comment.added",
-        summary: `${userName(c.author)} commented on v${version}`,
+        summary: `${userName(c.author)} commented on version ${version}`,
         details: { version, excerpt: c.body.slice(0, 140) },
       });
     }
@@ -192,7 +192,7 @@ function plan(scenario: SeedScenario, now: Date): PlannedSubmission {
         occurredAt: decidedAt,
         actorId: decidedById,
         action: OUTCOME_ACTION[seed.outcome],
-        summary: `${userName(decidedById)} ${OUTCOME_VERB[seed.outcome]} v${version}`,
+        summary: `${userName(decidedById)} ${OUTCOME_VERB[seed.outcome]} version ${version}`,
         details: {
           version,
           riskScore: precheck.score,

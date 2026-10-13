@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     template: "%s · ClearPath Review Hub",
   },
   description:
-    "Marketing compliance review for ClearPath Financial: automated pre-checks, SLA-tracked review, and an append-only audit trail.",
+    "Marketing compliance review for ClearPath Financial: an instant pre-check, review deadlines set by risk, and an audit trail nobody can edit.",
   // An internal tool, even as a public demo: keep it out of search results.
   robots: { index: false, follow: false },
 };

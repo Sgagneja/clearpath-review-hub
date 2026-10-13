@@ -19,7 +19,11 @@ export function getDb(): Database {
   if (globalForDb.__clearpathDb) return globalForDb.__clearpathDb;
 
   const url = process.env.DATABASE_URL;
-  if (!url) throw new Error("DATABASE_URL is not set. Copy .env.example to .env.local.");
+  if (!url) {
+    throw new Error(
+      "DATABASE_URL is not set. Locally, copy .env.example to .env.local. On Vercel, connect the Neon integration to the project.",
+    );
+  }
 
   const client = postgres(url, {
     // Neon's pooler runs PgBouncer in transaction mode, which can't hold

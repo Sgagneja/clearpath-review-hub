@@ -15,7 +15,6 @@ export default async function NewSubmissionPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="New submission"
         title="Send copy to compliance"
         description="The pre-check reads your copy as you type, so you can fix the obvious issues before a reviewer ever sees them."
       />

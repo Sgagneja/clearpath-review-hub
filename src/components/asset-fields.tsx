@@ -70,7 +70,7 @@ export function ChannelPicker({ defaultValue, onChange, error }: PickerProps<Cha
           return (
             <label
               key={c}
-              className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-line-strong bg-white px-3 py-1.5 text-[0.8125rem] font-medium text-ink-700 transition-colors hover:border-ink-300 has-[:checked]:border-ink-900 has-[:checked]:bg-ink-900 has-[:checked]:text-white has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-brand-100"
+              className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-line-strong bg-white px-3 py-1.5 text-[0.8125rem] font-medium text-ink-700 transition-colors hover:border-ink-300 has-[:checked]:border-ink-900 has-[:checked]:bg-ink-900 has-[:checked]:text-white has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-brand-100"
             >
               <input
                 type="radio"

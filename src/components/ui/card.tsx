@@ -38,3 +38,8 @@ export function CardHeader({
 export function CardBody({ className, ...props }: React.ComponentProps<"div">) {
   return <div className={cn("px-5 py-4", className)} {...props} />;
 }
+
+/** How to read the section above, set small at the foot like a report's footnote. */
+export function CardNote({ className, ...props }: React.ComponentProps<"p">) {
+  return <p className={cn("border-t border-line px-5 py-2.5 text-xs leading-relaxed text-ink-500", className)} {...props} />;
+}

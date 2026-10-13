@@ -1,6 +1,5 @@
 import { ArrowRight, CircleCheck, Hourglass } from "lucide-react";
 import Link from "next/link";
-import { Avatar } from "@/components/ui/avatar";
 import { buttonClasses } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Notice } from "@/components/ui/notice";
@@ -18,8 +17,8 @@ function DeniedNotice({ result }: { result: AuthzResult }) {
   if (result.allowed) return null;
   const sod = result.reason.startsWith(SOD_PREFIX);
   return (
-    <Notice tone="guard" title={sod ? "Separation of duties" : "You can't act on this one"}>
-      {sod ? "You wrote this submission, so a different reviewer has to decide it. That's enforced on the server for every action." : result.reason}
+    <Notice tone="guard" title={sod ? "A second reviewer has to decide this" : "You can't act on this one"}>
+      {sod ? "You wrote this submission, so a different reviewer has to decide it." : result.reason}
     </Notice>
   );
 }
@@ -42,11 +41,8 @@ export function ActionPanel({ detail, current, user }: { detail: SubmissionDetai
       <Card>
         <CardHeader title={status === "approved" ? "Approved" : "Rejected"} description={detail.closedAt ? `Closed ${formatDateTime(detail.closedAt)}` : undefined} />
         <CardBody className="space-y-2 text-sm text-ink-700">
-          <p className="flex items-center gap-2">
-            <Avatar person={current.decidedBy} size="sm" />
-            <span>
-              {current.decidedBy?.name ?? "A reviewer"} {status === "approved" ? "approved" : "rejected"} v{current.version}.
-            </span>
+          <p>
+            {current.decidedBy?.name ?? "A reviewer"} {status === "approved" ? "approved" : "rejected"} version {current.version}.
           </p>
           <p className="text-[0.8125rem] text-ink-500">
             {status === "approved"
@@ -66,8 +62,7 @@ export function ActionPanel({ detail, current, user }: { detail: SubmissionDetai
           {lastDecisionNote?.kind === "event" && lastDecisionNote.attachment ? (
             <figure className="rounded-lg border border-medium-200 bg-medium-50/60 px-3.5 py-3">
               <blockquote className="text-[0.875rem] leading-relaxed text-ink-800">{lastDecisionNote.attachment}</blockquote>
-              <figcaption className="mt-2 flex items-center gap-2 text-xs text-ink-500">
-                <Avatar person={lastDecisionNote.actor} size="xs" />
+              <figcaption className="mt-2 text-xs text-ink-500">
                 {lastDecisionNote.actor?.name} · {formatDateTime(lastDecisionNote.at)}
               </figcaption>
             </figure>
@@ -79,7 +74,7 @@ export function ActionPanel({ detail, current, user }: { detail: SubmissionDetai
             </Link>
           ) : (
             <p className="text-[0.8125rem] text-ink-500">
-              The SLA clock is paused until {detail.submitter?.name ?? "the submitter"} sends a revision.
+              The review deadline is paused until {detail.submitter?.name ?? "the submitter"} sends a revision.
             </p>
           )}
         </CardBody>
@@ -113,7 +108,7 @@ export function ActionPanel({ detail, current, user }: { detail: SubmissionDetai
           ) : user.role === "submitter" ? (
             <p className="flex items-start gap-2 text-[0.8125rem] text-ink-600">
               <Hourglass className="mt-0.5 size-4 shrink-0 text-ink-400" aria-hidden="true" />
-              With compliance. You&apos;ll see comments and the decision here, and the SLA is shown above.
+              With compliance. You&apos;ll see comments and the decision here, and the review deadline is shown above.
             </p>
           ) : (
             <DeniedNotice result={p.claim} />
@@ -128,7 +123,7 @@ export function ActionPanel({ detail, current, user }: { detail: SubmissionDetai
         ) : isOwner && user.role === "submitter" ? (
           <p className="flex items-start gap-2 text-[0.8125rem] text-ink-600">
             <CircleCheck className="mt-0.5 size-4 shrink-0 text-brand-500" aria-hidden="true" />
-            {assignee?.name ?? "A reviewer"} is reviewing v{current.version}. Reply to comments below if they ask anything.
+            {assignee?.name ?? "A reviewer"} is reviewing version {current.version}. Reply to comments below if they ask anything.
           </p>
         ) : (
           <DeniedNotice result={p.decide} />

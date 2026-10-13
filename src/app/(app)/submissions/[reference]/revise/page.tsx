@@ -2,7 +2,6 @@ import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Avatar } from "@/components/ui/avatar";
 import { buttonClasses } from "@/components/ui/button";
 import { Notice } from "@/components/ui/notice";
 import { PageHeader } from "@/components/ui/page-header";
@@ -47,16 +46,15 @@ export default async function RevisePage({ params }: PageProps<"/submissions/[re
         {detail.reference}
       </Link>
       <PageHeader
-        eyebrow={`Revision · ${detail.reference}`}
+        context={`Revising ${detail.reference}`}
         title={detail.title}
-        description="Edit the copy below. The pre-check compares every keystroke against the version that was sent back."
+        description="Edit the copy below. The pre-check updates as you type and shows what you've fixed since the version that was sent back."
       />
 
       {request?.kind === "event" && request.attachment ? (
         <figure className="rounded-xl border border-medium-200 bg-medium-50/70 px-5 py-4">
-          <figcaption className="flex items-center gap-2 text-[0.8125rem] font-medium text-medium-800">
-            <Avatar person={request.actor} size="sm" />
-            {request.actor?.name} requested changes on v{current.version} · {formatDateTime(request.at)}
+          <figcaption className="text-[0.8125rem] font-medium text-medium-800">
+            {request.actor?.name} requested changes on version {current.version} · {formatDateTime(request.at)}
           </figcaption>
           <blockquote className="mt-2 text-[0.9375rem] leading-relaxed text-ink-800">{request.attachment}</blockquote>
         </figure>

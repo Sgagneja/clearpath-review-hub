@@ -47,7 +47,7 @@ export function DecisionForm({ reference, version, openHighFindings }: { referen
     <form action={formAction} className="space-y-4">
       <input type="hidden" name="reference" value={reference} />
       <fieldset>
-        <legend className="text-[0.8125rem] font-medium text-ink-800">Decision on v{version}</legend>
+        <legend className="text-[0.8125rem] font-medium text-ink-800">Decision on version {version}</legend>
         <div className="mt-2 grid gap-2">
           {DECISIONS.map((d) => {
             const { label, hint, icon: Icon, tone } = OPTIONS[d];
@@ -88,7 +88,7 @@ export function DecisionForm({ reference, version, openHighFindings }: { referen
       {selected ? (
         <SubmitButton variant={selected.button} className="w-full" pendingLabel="Recording…">
           <selected.icon aria-hidden="true" />
-          {decision === "approve" ? `Approve v${version}` : decision === "request_changes" ? "Send back for changes" : "Reject submission"}
+          {decision === "approve" ? `Approve version ${version}` : decision === "request_changes" ? "Send back for changes" : "Reject submission"}
         </SubmitButton>
       ) : (
         <SubmitButton variant="secondary" className="w-full" disabled>

@@ -33,19 +33,8 @@ export const SEVERITY_FILL: Record<Severity, string> = {
 };
 
 export function SeverityTag({ severity, className }: { severity: Severity; className?: string }) {
-  const box = {
-    high: "bg-high-50 text-high-800 ring-high-200",
-    medium: "bg-medium-50 text-medium-800 ring-medium-200",
-    low: "bg-low-50 text-low-800 ring-low-200",
-  }[severity];
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-1.5 py-0.5 text-[0.6875rem] font-semibold uppercase tracking-[0.06em] ring-1 ring-inset",
-        box,
-        className,
-      )}
-    >
+    <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-semibold", SEVERITY_TEXT[severity], className)}>
       <SeverityGlyph severity={severity} />
       {SEVERITY_LABELS[severity]}
     </span>

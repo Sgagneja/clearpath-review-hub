@@ -118,7 +118,7 @@ export function SubmissionForm({ today, samples }: { today: string; samples: Sam
                   type="button"
                   onClick={() => loadSample(s)}
                   className={cn(
-                    "rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
+                    "rounded-md border px-2.5 py-1 text-xs font-medium transition-colors",
                     s.id === "clean-loan"
                       ? "border-approve-100 bg-approve-50 text-approve-700 hover:border-approve-500"
                       : "border-line-strong bg-paper text-ink-700 hover:border-ink-300 hover:text-ink-950",

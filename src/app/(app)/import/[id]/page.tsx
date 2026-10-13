@@ -6,7 +6,6 @@ import { z } from "zod";
 import { AccessDenied } from "@/components/access-denied";
 import { SeverityGlyph } from "@/components/severity";
 import { StatusBadge } from "@/components/status-badge";
-import { Avatar } from "@/components/ui/avatar";
 import { buttonClasses } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Notice } from "@/components/ui/notice";
@@ -59,16 +58,15 @@ export default async function ImportDetailPage({ params, searchParams }: PagePro
       </nav>
 
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="flex min-w-0 items-start gap-4">
-          <span className="mt-1 inline-flex size-11 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700 ring-1 ring-inset ring-brand-100">
-            {batch.kind === "spreadsheet" ? <FileSpreadsheet className="size-5" aria-hidden="true" /> : <MailPlus className="size-5" aria-hidden="true" />}
-          </span>
-          <div className="min-w-0">
-            <h1 className="font-serif text-[2rem] font-medium leading-tight tracking-[-0.015em] text-ink-950 wrap-anywhere md:truncate">{name}</h1>
-            <p className="mt-1 text-ink-600">
-              {pluralize(batch.count, "review")} imported by {batch.importedBy} · {formatDateTime(batch.importedAt)}
-            </p>
-          </div>
+        <div className="min-w-0">
+          <p className="mb-1 flex items-center gap-1.5 text-[0.8125rem] font-medium text-ink-500">
+            {batch.kind === "spreadsheet" ? <FileSpreadsheet className="size-3.5" aria-hidden="true" /> : <MailPlus className="size-3.5" aria-hidden="true" />}
+            {batch.kind === "spreadsheet" ? "Excel tracker" : "Email"}
+          </p>
+          <h1 className="page-title wrap-anywhere md:truncate">{name}</h1>
+          <p className="mt-1 text-ink-600">
+            {pluralize(batch.count, "review")} imported by {batch.importedBy} · {formatDateTime(batch.importedAt)}
+          </p>
         </div>
         {batch.open.length > 0 ? (
           <Link href="/queue" className={buttonClasses({ variant: "brand" })}>
@@ -144,15 +142,8 @@ function ItemList({
             <span className="md:justify-self-start">
               <StatusBadge status={item.status} />
             </span>
-            <span className="flex items-center gap-1.5 text-[0.8125rem] text-ink-700 max-md:hidden">
-              {item.assignee ? (
-                <>
-                  <Avatar person={item.assignee} size="xs" />
-                  <span className="truncate">{item.assignee.name}</span>
-                </>
-              ) : (
-                <span className="text-ink-400">Not assigned</span>
-              )}
+            <span className={cn("truncate text-[0.8125rem] max-md:hidden", item.assignee ? "text-ink-700" : "italic text-ink-400")}>
+              {item.assignee ? item.assignee.name : "Not assigned"}
             </span>
             <span className="text-[0.8125rem] max-md:col-span-2 md:text-right">
               {showDeadline ? (

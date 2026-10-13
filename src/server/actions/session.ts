@@ -34,13 +34,13 @@ export async function signInAs(_prev: FormState, formData: FormData): Promise<Fo
     if (previous && previous.id !== user.id) {
       await recordAudit(db, previous, {
         action: "session.signed_out",
-        summary: `${previous.name} switched persona to ${user.name}`,
+        summary: `${previous.name} switched to ${user.name}`,
       });
     }
     const session = await startSession(user.id);
     await recordAudit(db, { ...user, sessionId: session.sessionId }, {
       action: "session.signed_in",
-      summary: `${user.name} signed in with a demo persona`,
+      summary: `${user.name} signed in to the demo`,
     });
 
     redirect(safeNextPath(values.next) ?? homePathFor(user.role));

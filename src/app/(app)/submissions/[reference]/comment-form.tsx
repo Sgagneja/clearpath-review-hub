@@ -16,7 +16,7 @@ export function CommentForm({ reference, version }: { reference: string; version
     <form action={formAction} className="space-y-2">
       <input type="hidden" name="reference" value={reference} />
       <Label htmlFor="comment-body" className="sr-only">
-        Add a comment on v{version}
+        Add a comment on version {version}
       </Label>
       <Textarea
         id="comment-body"
@@ -25,7 +25,7 @@ export function CommentForm({ reference, version }: { reference: string; version
         required
         maxLength={LIMITS.commentMax}
         defaultValue={submittedValue(state, "body")}
-        placeholder={`Comment on v${version}…`}
+        placeholder={`Comment on version ${version}…`}
         aria-invalid={Boolean(error)}
         aria-describedby={error ? "comment-error" : undefined}
         className="text-sm"

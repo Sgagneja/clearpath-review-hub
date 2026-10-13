@@ -51,7 +51,7 @@ export function NavLinks({ items, onNavigate }: { items: NavItem[]; onNavigate?:
               <Icon className={cn("size-4 shrink-0", active ? "text-brand-200" : "text-ink-400 group-hover:text-ink-200")} aria-hidden="true" />
               <span className="flex-1 truncate">{item.label}</span>
               {item.badge ? (
-                <span className="rounded-full bg-brand-500/20 px-1.5 py-px font-mono text-[0.6875rem] text-brand-100 ring-1 ring-inset ring-brand-400/30">
+                <span className={cn("text-xs tabular-nums", active ? "text-brand-100" : "text-ink-400 group-hover:text-ink-200")}>
                   <span className="sr-only">(</span>
                   {item.badge}
                   <span className="sr-only"> waiting on you)</span>

@@ -24,9 +24,9 @@ export default async function RulesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow={`Pre-check engine · ${ENGINE_VERSION}`}
+        context={`Rule set ${ENGINE_VERSION}`}
         title="Rule library"
-        description="Every rule the automated pre-check runs, and the regulation behind it. The rules are deterministic pattern checks with no AI, so the same copy always gets the same result and every finding can be explained."
+        description="Every check the pre-check runs, and the regulation behind it. The checks are written rules, not AI, so the same copy always gets the same result and every finding can be explained."
       />
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -65,7 +65,7 @@ export default async function RulesPage() {
           </CardBody>
         </Card>
         <Card>
-          <CardHeader title="Review SLA by risk" />
+          <CardHeader title="Review deadline by risk" />
           <CardBody className="space-y-2 text-[0.8125rem] text-ink-700">
             {SEVERITIES.map((s) => (
               <p key={s} className="flex justify-between">
@@ -84,7 +84,7 @@ export default async function RulesPage() {
         return (
           <section key={category} aria-labelledby={`cat-${category}`} className="space-y-3">
             <div>
-              <h2 id={`cat-${category}`} className="font-serif text-xl font-medium text-ink-950">
+              <h2 id={`cat-${category}`} className="text-lg font-semibold tracking-[-0.01em] text-ink-950">
                 {RULE_CATEGORY_LABELS[category]}
               </h2>
               <p className="text-[0.8125rem] text-ink-500">{CATEGORY_NOTES[category]}</p>
@@ -99,24 +99,16 @@ export default async function RulesPage() {
                   <h3 className="mt-2 font-semibold text-ink-950">{rule.title}</h3>
                   <p className="mt-0.5 font-mono text-[0.6875rem] text-ink-500">{rule.citation}</p>
                   <p className="mt-2 text-[0.875rem] leading-relaxed text-ink-700">{rule.summary}</p>
-                  <ul className="mt-3 flex flex-wrap gap-1.5" aria-label="Applies to">
-                    {PRODUCT_LINES.map((p) => {
-                      const applies = rule.products.includes(p);
-                      return (
-                        <li
-                          key={p}
-                          className={
-                            applies
-                              ? "rounded-full bg-ink-50 px-2 py-0.5 text-[0.6875rem] font-medium text-ink-700 ring-1 ring-inset ring-ink-200"
-                              : "rounded-full px-2 py-0.5 text-[0.6875rem] text-ink-300 line-through"
-                          }
-                        >
-                          <span className="sr-only">{applies ? "Applies to " : "Does not apply to "}</span>
-                          {PRODUCT_LINE_LABELS[p]}
-                        </li>
-                      );
-                    })}
-                  </ul>
+                  <p className="mt-3 text-xs text-ink-500">
+                    Applies to{" "}
+                    <span className="text-ink-700">
+                      {rule.products.length === PRODUCT_LINES.length
+                        ? "every product"
+                        : PRODUCT_LINES.filter((p) => rule.products.includes(p))
+                            .map((p) => PRODUCT_LINE_LABELS[p])
+                            .join(", ")}
+                    </span>
+                  </p>
                 </li>
               ))}
             </ul>
