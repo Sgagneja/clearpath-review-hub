@@ -1,26 +1,263 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+ * ClearPath Review Hub design tokens.
+ *
+ * The look is an editorial "proof sheet": warm paper, navy ink, a single teal
+ * accent, and highlighter colours that mean exactly one thing each (red =
+ * high risk, amber = medium, blue = low). Severity colours are never used for
+ * decoration, so they stay meaningful.
+ */
+@theme {
+  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, "SFMono-Regular", monospace;
+  --font-serif: var(--font-newsreader), ui-serif, Georgia, serif;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-ink-950: #08152a;
+  --color-ink-900: #0d1f3a;
+  --color-ink-800: #16304f;
+  --color-ink-700: #234264;
+  --color-ink-600: #3b5677;
+  --color-ink-500: #5a7190;
+  --color-ink-400: #8798ae;
+  --color-ink-300: #b5c0cf;
+  --color-ink-200: #d6dde6;
+  --color-ink-100: #eaeef3;
+  --color-ink-50: #f4f6f9;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  --color-paper: #f6f4ee;
+  --color-paper-2: #efebe1;
+  --color-line: #e4dfd3;
+  --color-line-strong: #d2cbbb;
+
+  --color-brand-50: #e9f6f3;
+  --color-brand-100: #d0ece6;
+  --color-brand-200: #a3d8cd;
+  --color-brand-300: #6fc0b1;
+  --color-brand-400: #36a593;
+  --color-brand-500: #138a79;
+  --color-brand-600: #0c7466;
+  --color-brand-700: #0a5d53;
+  --color-brand-800: #0a4a43;
+
+  --color-high-50: #fdf1ee;
+  --color-high-100: #f9ddd6;
+  --color-high-200: #f2bcae;
+  --color-high-500: #d6492f;
+  --color-high-600: #bb3820;
+  --color-high-700: #9a2c18;
+  --color-high-800: #772314;
+
+  --color-medium-50: #fdf6e6;
+  --color-medium-100: #f8e8c0;
+  --color-medium-200: #f1d487;
+  --color-medium-500: #cf8a12;
+  --color-medium-600: #a96c07;
+  --color-medium-700: #865405;
+  --color-medium-800: #654006;
+
+  --color-low-50: #eef3fb;
+  --color-low-100: #dbe5f6;
+  --color-low-200: #b8cbec;
+  --color-low-500: #4f78c2;
+  --color-low-600: #3c62a9;
+  --color-low-700: #304f8a;
+  --color-low-800: #263f6c;
+
+  --color-approve-50: #ebf6ee;
+  --color-approve-100: #d1ecd9;
+  --color-approve-500: #2f9152;
+  --color-approve-600: #237a42;
+  --color-approve-700: #1b6134;
+
+  --shadow-card: 0 1px 0 rgb(8 21 42 / 0.03), 0 1px 3px rgb(8 21 42 / 0.05);
+  --shadow-raised: 0 1px 2px rgb(8 21 42 / 0.06), 0 12px 32px -12px rgb(8 21 42 / 0.18);
+  --shadow-inset-line: inset 0 0 0 1px var(--color-line);
+
+  --animate-flash: flash 1.6s ease-out 1;
+
+  @keyframes flash {
+    0% {
+      box-shadow: 0 0 0 3px var(--color-brand-300);
+    }
+    100% {
+      box-shadow: 0 0 0 3px transparent;
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  html {
+    color-scheme: light;
+    -webkit-tap-highlight-color: transparent;
+    scroll-padding-top: 1.5rem;
+    /* Everything is sized in rem, so this scales type and spacing together: 16px up to
+       a 1920px screen, rising to 18px at 2400px and wider. Breakpoints are unaffected
+       (media queries use the browser default), and browser zoom still works. */
+    font-size: clamp(100%, 0.5rem + 0.4167vw, 112.5%);
+  }
+
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink-900);
+    font-family: var(--font-sans);
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background-color: var(--color-brand-100);
+    color: var(--color-ink-950);
+  }
+
+  /* Browsers give fieldsets min-width: min-content, which defeats `truncate` inside them. */
+  fieldset {
+    min-inline-size: 0;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brand-500);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* Small caps label used above titles and in table headers. */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* The copy under review, set like a printed proof. */
+  .proof {
+    font-family: var(--font-serif);
+    font-size: 1.0625rem;
+    line-height: 1.75;
+    color: var(--color-ink-900);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font-optical-sizing: auto;
+  }
+
+  /*
+   * Highlighter marks. The skewed gradient gives the slightly uneven edge of
+   * a real marker; box-decoration-break keeps it intact across line breaks.
+   */
+  .hl {
+    color: inherit;
+    border-radius: 0.2em 0.35em;
+    padding: 0.05em 0.1em;
+    margin: 0 -0.1em;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+    text-decoration: underline;
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 0.22em;
+  }
+  .hl-high {
+    background-image: linear-gradient(100deg, rgb(234 96 72 / 0.08), rgb(234 96 72 / 0.26) 6%, rgb(234 96 72 / 0.2) 94%, rgb(234 96 72 / 0.06));
+    text-decoration-color: var(--color-high-500);
+  }
+  .hl-medium {
+    background-image: linear-gradient(100deg, rgb(240 182 54 / 0.12), rgb(240 182 54 / 0.36) 6%, rgb(240 182 54 / 0.28) 94%, rgb(240 182 54 / 0.08));
+    text-decoration-color: var(--color-medium-500);
+  }
+  .hl-low {
+    background-image: linear-gradient(100deg, rgb(96 136 210 / 0.08), rgb(96 136 210 / 0.22) 6%, rgb(96 136 210 / 0.16) 94%, rgb(96 136 210 / 0.05));
+    text-decoration-color: var(--color-low-500);
+  }
+
+  /* Footnote-style marker that links a highlight to its finding. */
+  .fn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.15rem;
+    height: 1.15rem;
+    padding: 0 0.25rem;
+    margin-left: 0.15rem;
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    font-weight: 500;
+    line-height: 1;
+    vertical-align: 0.45em;
+    text-decoration: none;
+    color: white;
+  }
+
+  /* Redline view of what changed between versions. */
+  .redline-ins {
+    background-color: var(--color-approve-100);
+    color: var(--color-approve-700);
+    text-decoration: none;
+    border-radius: 0.2em;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+  .redline-del {
+    color: var(--color-high-700);
+    text-decoration: line-through;
+    text-decoration-color: var(--color-high-500);
+    text-decoration-thickness: 1.5px;
+    background-color: var(--color-high-50);
+    border-radius: 0.2em;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+
+  /* Hatched edge on rows that are overdue or threaten a launch date. */
+  .hatch {
+    background-image: repeating-linear-gradient(-45deg, currentColor 0 2px, transparent 2px 5px);
+  }
+
+  /* A linked finding card briefly lights up when you jump to it. */
+  .finding:target {
+    animation: var(--animate-flash);
+    border-color: var(--color-brand-400);
+  }
+
+  .select-chevron {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%235a7190' stroke-width='1.5'><path d='m4 6 4 4 4-4'/></svg>");
+    background-size: 1rem;
+    background-position: right 0.6rem center;
+    background-repeat: no-repeat;
+  }
+
+  /* Rubber-stamp mark for final decisions. */
+  .stamp {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.1rem;
+    padding: 0.35rem 0.8rem 0.3rem;
+    border: 2px solid currentColor;
+    border-radius: 0.4rem;
+    outline: 1px solid currentColor;
+    outline-offset: 2px;
+    transform: rotate(-3deg);
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    line-height: 1.1;
+  }
+}
+
+@utility scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-ink-700) transparent;
 }
