@@ -7,7 +7,7 @@ so more campaigns get reviewed, on time, with less back-and-forth.
 > ClearPath Financial, its people and its data are fictional. This is a working
 > demo: anyone with the link can sign in as one of seven sample employees.
 
-**Live demo:** _link added after the first deploy_
+**Live demo:** [clearpath-review-hub.vercel.app](https://clearpath-review-hub.vercel.app)
 
 ![The review queue: every open review, soonest deadline first](docs/screenshots/queue.jpg)
 
