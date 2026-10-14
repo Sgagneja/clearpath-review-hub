@@ -39,22 +39,25 @@ import {
  *     the secret manager.
  */
 
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  sameSite: "lax",
+  secure: process.env.NODE_ENV === "production",
+  path: "/",
+} as const;
+
 export async function startSession(userId: string): Promise<Session> {
   const { token, session } = await signSession(userId, sessionKey());
   const store = await cookies();
-  store.set(SESSION_COOKIE, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: SESSION_TTL_SECONDS,
-  });
+  store.set(SESSION_COOKIE, token, { ...COOKIE_OPTIONS, maxAge: SESSION_TTL_SECONDS });
   return session;
 }
 
 export async function endSession(): Promise<void> {
   const store = await cookies();
-  store.delete(SESSION_COOKIE);
+  // Browsers ignore a `__Host-` cookie that isn't Secure, including the expired
+  // one that clears it, so it has to be cleared with the attributes it was set with.
+  store.set(SESSION_COOKIE, "", { ...COOKIE_OPTIONS, maxAge: 0 });
 }
 
 /** The verified session for this request, or null. Cached per request. */
