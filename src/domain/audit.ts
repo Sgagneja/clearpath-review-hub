@@ -27,6 +27,17 @@ export function isAuditAction(value: string): value is AuditAction {
   return value in AUDIT_ACTIONS;
 }
 
+/**
+ * Events about the team's access and records rather than one queue item. The
+ * audit trail lists them on their own, so each item's trail reads cleanly.
+ */
+export const ACTIVITY_ACTIONS = [
+  "session.signed_in",
+  "session.signed_out",
+  "import.tracker",
+  "audit.exported",
+] as const satisfies readonly AuditAction[];
+
 /** Visual grouping for the timeline and audit table. */
 export type AuditTone = "neutral" | "positive" | "warning" | "negative" | "system";
 

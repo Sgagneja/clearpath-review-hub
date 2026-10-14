@@ -1,4 +1,5 @@
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
+import { watchErrors, type ErrorWatch } from "./errors";
 
 /**
  * Every page has to fit the screen it's opened on: a phone, a tablet, a
@@ -12,6 +13,15 @@ import { expect, test, type Page, type TestInfo } from "@playwright/test";
  */
 
 const SCREENSHOTS = process.env.LAYOUT_SCREENSHOTS !== "0";
+const NOT_FOUND = "/this-page-does-not-exist";
+
+// Every page is also watched for errors: one that fits but throws still fails.
+let errors: ErrorWatch;
+test.beforeEach(({ page }, testInfo) => {
+  errors = watchErrors(page, testInfo.title.split(":")[0]);
+  errors.allowMissing(NOT_FOUND);
+});
+test.afterEach(() => errors.expectNone());
 
 async function signInAs(page: Page, firstName: "Dana" | "Priya") {
   await page.goto("/login");
@@ -66,6 +76,7 @@ async function visit(page: Page, testInfo: TestInfo, name: string, path: string)
   await test.step(name, async () => {
     const response = await page.goto(path);
     expect.soft(response?.status() ?? 0, `${name} (${path}) failed to load`).toBeLessThan(500);
+    if (path !== NOT_FOUND) await errors.expectNoErrorScreen();
     await expectToFit(page, name, testInfo);
   });
 }
@@ -87,6 +98,9 @@ test("compliance lead: every page fits", async ({ page, isMobile }, testInfo) =>
   await visit(page, testInfo, "new-submission", "/submissions/new");
   await visit(page, testInfo, "new-submission-test-case", "/submissions/new?example=mp-everything-wrong");
   await visit(page, testInfo, "audit", "/audit");
+  await visit(page, testInfo, "audit-activity", "/audit/activity");
+  const trail = await firstHref(page, "/audit", /^\/audit\/MKT-\d+$/);
+  if (trail) await visit(page, testInfo, "audit-item", trail);
   await visit(page, testInfo, "rules", "/rules");
   await visit(page, testInfo, "rules-mortgage", "/rules?product=mortgage_prequal");
   await test.step("rules-test-case-open", async () => {
@@ -94,7 +108,7 @@ test("compliance lead: every page fits", async ({ page, isMobile }, testInfo) =>
     await expectToFit(page, "rules-test-case-open", testInfo);
   });
   await visit(page, testInfo, "import", "/import");
-  await visit(page, testInfo, "not-found", "/this-page-does-not-exist");
+  await visit(page, testInfo, "not-found", NOT_FOUND);
 
   const open = await firstHref(page, "/queue", /^\/submissions\/MKT-\d+$/);
   if (open) await visit(page, testInfo, "review-open", open);
@@ -138,6 +152,8 @@ test("submitter: every page fits", async ({ page }, testInfo) => {
   await visit(page, testInfo, "submitter-queue", "/queue");
   await visit(page, testInfo, "submitter-new-submission", "/submissions/new");
   await visit(page, testInfo, "submitter-no-access", "/audit");
+  await visit(page, testInfo, "submitter-no-access-item", "/audit/MKT-1001");
+  expect.soft(await page.getByRole("heading", { name: /^\d+ events?$/ }).count(), "an item's trail is for compliance only").toBe(0);
   await visit(page, testInfo, "submitter-rules-card", "/rules?product=credit_card");
   expect.soft(await page.getByText("test cases").count(), "test cases are for compliance only").toBe(0);
   await visit(page, testInfo, "submitter-test-case-link", "/submissions/new?example=cc-guaranteed");

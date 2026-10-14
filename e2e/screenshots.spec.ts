@@ -69,6 +69,9 @@ test("desktop screenshots", async ({ page }, testInfo) => {
 
   await page.goto("/audit");
   await shoot(page, "audit");
+  await page.getByRole("link", { name: /^MKT-\d+/ }).filter({ visible: true }).first().click();
+  await expect(page.getByRole("heading", { name: /^\d+ events?$/ })).toBeVisible();
+  await shoot(page, "audit-item");
 
   await signInAs(page, "Priya");
   await page.goto("/submissions/new");

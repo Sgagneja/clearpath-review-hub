@@ -67,9 +67,9 @@ A five-minute walkthrough:
    send it back. The review page shows a tracked-changes view between versions,
    and the strip at the top shows every round so far.
 5. **As Dana**, approve it, then open the **Rule library**, pick a product and
-   try one of its test cases. Finish with the **Audit trail** (**Download for
-   Excel**) and **Import**, where **See a filled-in example** gives you a
-   tracker to try.
+   try one of its test cases. Finish with the **Audit trail** (open the item
+   you just approved to see its whole record, then **Download for Excel**) and
+   **Import**, where **See a filled-in example** gives you a tracker to try.
 
 For the exact result to expect at every step, including how the team
 overview's counts move, follow the [worked examples](#worked-examples-end-to-end).
@@ -78,6 +78,7 @@ overview's counts move, follow the [worked examples](#worked-examples-end-to-end
 | --- | --- |
 | ![A review with the pre-check's findings marked in the copy](docs/screenshots/review.jpg) | ![The live pre-check while drafting](docs/screenshots/new-submission.jpg) |
 | ![The team overview](docs/screenshots/dashboard.jpg) | ![Checking an Excel tracker before importing it](docs/screenshots/import-preview.jpg) |
+| ![The audit trail, one row per queue item](docs/screenshots/audit.jpg) | ![One queue item's audit trail, oldest first](docs/screenshots/audit-item.jpg) |
 
 It works the same on a phone, tablet, laptop or a large monitor:
 
@@ -97,7 +98,7 @@ It works the same on a phone, tablet, laptop or a large monitor:
 | **Submission page** | Its submitter and compliance | The copy with findings marked, the lifecycle strip (every round through to launch), every version with tracked changes, comments, and the assign and decide controls |
 | **Revise** | Its submitter | Resubmit the next version after changes are requested |
 | **Import** | Compliance | Bring in an Excel or CSV tracker, or a review-request email |
-| **Audit trail** | Compliance (download: the lead) | Every event, newest first, and **Download for Excel** |
+| **Audit trail** | Compliance (download: the lead) | One row per queue item, most recent activity first. Each opens that item's own trail, oldest first, which the lead can download on its own. Sign-ins, tracker imports and downloads sit on a separate tab, so they never clutter an item's record |
 | **Rule library** | Everyone | All 16 checks with their regulations, by product. Compliance also sees each product's test cases and can open one in New submission |
 
 ## How a submission moves
@@ -163,8 +164,9 @@ for changes, and is approved as version 2.
 | 5 | Priya | Replies, then **Revise and resubmit** with the **Compliant example** copy and a note → **Resubmit as version 2** | Version 2: no findings, score 0, low risk, a new 120-hour deadline. Still assigned to Marcus | Back with marketing −1, Waiting +1 |
 | 6 | Marcus | **Start review** | Status: In review | Waiting −1, Under review +1 |
 | 7 | Marcus | **Approve** → **Approve version 2** | The strip at the top reads Submitted · Version 1 sent back · Version 2 approved · Cleared to launch | Under review −1, Decided +1 |
-| 8 | Dana | **Audit trail** → **Download for Excel** | A CSV file that includes this submission. Marcus sees the button but can't use it. The download is recorded too | No change |
-| 9 | Priya | **Switch person** → **Sign out** | Back at sign-in. Opening the queue now sends her to sign-in | No change |
+| 8 | Dana | **Audit trail** → **Download for Excel** | A CSV file of everything, including this submission. Marcus sees the button but can't use it. The download is recorded too | No change |
+| 9 | Dana | **Audit trail** → find the submission → open it → **Download for Excel** | Its own trail: 11 events, oldest first. The file holds just those 11, and the download is added to this item's trail. Priya's sign-in is on the **Sign-ins, imports and downloads** tab, not here | No change |
+| 10 | Priya | **Switch person** → **Sign out** | Back at sign-in. Opening the queue now sends her to sign-in | No change |
 
 **Net effect:** two decisions this week (one send-back, one approval) and every
 other count back where it started. That's one campaign cleared to launch.
@@ -177,8 +179,9 @@ What's stored afterwards:
 - **audit_events:** 11 for the submission, in order: `submission.created`,
   `precheck.completed`, `reviewer.assigned`, `review.started`, `comment.added`,
   `decision.changes_requested`, `comment.added`, `submission.resubmitted`,
-  `precheck.completed`, `review.started`, `decision.approved`. Separately,
-  `audit.exported` for Dana's download, and `session.signed_in` and
+  `precheck.completed`, `review.started`, `decision.approved`, then a 12th,
+  `audit.exported`, when Dana downloads this item's trail. On the other tab:
+  `audit.exported` for her full download, and `session.signed_in` and
   `session.signed_out` for Priya.
 - **users:** unchanged. The app never writes to it.
 
@@ -461,6 +464,7 @@ What we took as given because the brief didn't say. Each is one edit to change;
 | The pre-check, per product | The 42 test cases above, plus checks that every rule is covered for every product and every channel agrees | Part of the 337 |
 | Every workflow, every table | The [worked examples](#worked-examples-end-to-end), step by step on the real screens as four different people. After each step they check the team overview's counts, and they check the scores, deadlines and rows in all six tables | 5 workflows |
 | Every page on every screen | Signs in as each role and fails if anything pushes past the edge of a phone, tablet, laptop, desktop or 2560px screen | 5 sizes |
+| No errors, anywhere | Every browser in the tests above is watched: an uncaught error, a console error, a server error, a broken link or one of the app's error screens fails the run. The sweep also clicks through the menu and opens every page each role can reach, and runs against the live site with `npm run check:live` | 3 roles, ~40 pages each |
 
 All of it runs on every push in GitHub Actions
 ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)). The workflow tests
@@ -500,6 +504,8 @@ review; business-hours deadlines; rule changes approved inside the app.
 | Lifecycle strip | Each submission shows every round through to launch, in the space the old three-step strip took |
 | Workflow tests | Every workflow through the real screens, checked against all six tables. They found that Sign out didn't work on the live site: the sign-in cookie was being removed without the security settings it was created with. Fixed |
 | Worked examples | This README's end-to-end examples, with the tests checking every number in them. Checking them found that saved copy could get one fewer finding than the writer saw while typing; fixed in Rule set 2026.10.3 |
+| Audit trail by queue item | The audit trail lists queue items instead of every event mixed together. Each item opens its own trail and downloads on its own; sign-ins, tracker imports and downloads have their own tab |
+| Error sweep | Every test now fails on any error a person would see, and a read-only sweep checks every page of the live site in about two minutes |
 
 The full history is in the
 [commit log](https://github.com/Sgagneja/clearpath-review-hub/commits/main).
@@ -555,6 +561,8 @@ is added with `vercel env add SESSION_SECRET`.
 | `npm test` | Unit tests (Vitest) |
 | `npm run test:workflows` | Every workflow through the screens, checked against each table (Playwright; local database only, reset before and after) |
 | `npm run test:layout` | Signs in as each role and checks every page fits phone, tablet, laptop, desktop and 2560px screens (Playwright) |
+| `npm run check:live` | The quick run-through of the live site: signs in as a marketer, a reviewer and the lead, clicks through the menu, opens every page they can reach and fails on any error. Read-only, about two minutes |
+| `npm run test:sweep` | The same run-through against the app on this machine. `SWEEP_ACTIONS=1` also takes every action once (writes demo data) |
 | `npm run docs:screenshots` | Regenerates the screenshots in this README (run `npm run db:seed` first) |
 | `npm run db:generate` | Write a new migration after changing `src/db/schema.ts` |
 | `npm run db:migrate` | Apply migrations |

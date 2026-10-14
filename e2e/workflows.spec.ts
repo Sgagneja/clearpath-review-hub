@@ -4,6 +4,8 @@ import { expect, test, type Browser, type Page } from "@playwright/test";
 import { config } from "dotenv";
 import postgres from "postgres";
 import { SAMPLES } from "../src/app/(app)/submissions/new/samples";
+import type { ErrorWatch } from "./errors";
+import { choose, exampleTracker, launchIn, openAs, submitSample, type FirstName } from "./people";
 
 /**
  * Every workflow that writes to the database, driven through the screens the
@@ -47,34 +49,18 @@ test.afterAll(async () => {
   reseed();
 });
 
-type FirstName = "Priya" | "Marcus" | "Alana" | "Dana";
+// Everyone's browser is watched, and a test fails if anyone saw an error along the way.
+let watches: ErrorWatch[] = [];
+test.afterEach(() => {
+  const current = watches;
+  watches = [];
+  for (const watch of current) watch.expectNone();
+});
 
-/** A separate browser session per person, as if each were on their own laptop. */
 async function signIn(browser: Browser, firstName: FirstName): Promise<Page> {
-  const page = await (await browser.newContext()).newPage();
-  await page.goto("/login");
-  await page.getByRole("button", { name: new RegExp(`Continue as ${firstName}`) }).click();
-  await page.waitForURL((url) => !url.pathname.startsWith("/login"));
+  const { page, errors } = await openAs(browser, firstName);
+  watches.push(errors);
   return page;
-}
-
-function launchIn(days: number): string {
-  return new Date(Date.now() + days * 86_400_000).toISOString().slice(0, 10);
-}
-
-async function submitSample(page: Page, sample: string): Promise<string> {
-  await page.goto("/submissions/new");
-  await page.getByRole("button", { name: sample, exact: true }).click();
-  await page.getByLabel("Target launch date").fill(launchIn(21));
-  await page.getByRole("button", { name: "Submit for review" }).click();
-  await page.waitForURL(/\/submissions\/MKT-\d+\?created=/);
-  return page.url().match(/MKT-\d+/)![0];
-}
-
-/** Decisions are cards wrapping a visually hidden radio, so click the card, as a person would. */
-async function choose(page: Page, decision: "Approve" | "Request changes" | "Reject") {
-  await page.locator("label").filter({ has: page.getByRole("radio") }).filter({ hasText: new RegExp(`^${decision}`) }).click();
-  await expect(page.getByRole("radio", { name: new RegExp(`^${decision}`) })).toBeChecked();
 }
 
 async function submission(reference: string) {
@@ -275,6 +261,25 @@ test("a submission from first draft to approval, across four people", async ({ b
     expect(await exports(), "one export, one event").toBe(before + 1);
   });
 
+  await test.step("the audit trail is organised by queue item, with the team's own activity apart", async () => {
+    await dana.goto(`/audit?q=${reference}`);
+    await expect(dana.getByRole("link", { name: new RegExp(reference) }).filter({ visible: true }).first()).toBeVisible();
+    await expect(dana.getByText("Signed in", { exact: true }), "sign-ins aren't mixed in with queue items").toHaveCount(0);
+
+    await dana.goto(`/audit/${reference}`);
+    await expect(dana.getByRole("heading", { name: "11 events" })).toBeVisible();
+    const download = dana.waitForEvent("download");
+    await dana.getByRole("button", { name: "Download for Excel" }).click();
+    const file = await download;
+    expect(file.suggestedFilename()).toContain(reference);
+    const rows = (await readFile(await file.path(), "utf8")).trim().split(/\r?\n/);
+    expect(rows, "a header and this item's 11 events, nothing else").toHaveLength(12);
+    expect((await auditActions(reference)).at(-1), "downloading one item's trail is on that item's trail").toBe("audit.exported");
+
+    await dana.goto("/audit/activity?action=session.signed_in&q=Priya");
+    await expect(dana.getByText("Priya Raman signed in to the demo").filter({ visible: true }).first()).toBeVisible();
+  });
+
   await test.step("signing out ends the session and is audited", async () => {
     await priya.getByRole("button", { name: /Switch person/ }).click();
     await priya.getByRole("button", { name: "Sign out" }).click();
@@ -355,12 +360,7 @@ test("nobody can review their own copy, and a test case saves nothing until subm
 
 test("a spreadsheet tracker comes in once, with its history", async ({ browser }) => {
   const dana = await signIn(browser, "Dana");
-  const example = await dana.request.get("/import/example");
-  const file = {
-    name: "ClearPath review tracker example.xlsx",
-    mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    buffer: await example.body(),
-  };
+  const file = await exampleTracker(dana);
 
   const upload = async () => {
     await dana.goto("/import/spreadsheet");

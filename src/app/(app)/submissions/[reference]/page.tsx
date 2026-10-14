@@ -321,7 +321,18 @@ export default async function SubmissionPage({ params, searchParams }: PageProps
         ) : null}
 
         <Card aria-labelledby="activity-title" className="min-w-0 xl:col-start-1">
-          <CardHeader titleId="activity-title" title="Activity" description="Comments and every step so far, as recorded in the audit trail." />
+          <CardHeader
+            titleId="activity-title"
+            title="Activity"
+            description="Comments and every step so far, as recorded in the audit trail."
+            action={
+              can(user, "audit.view") ? (
+                <Link href={`/audit/${detail.reference}`} className="text-[0.8125rem] font-medium text-brand-700 hover:underline">
+                  Audit trail
+                </Link>
+              ) : undefined
+            }
+          />
           <CardBody className="space-y-6">
             <Timeline items={detail.timeline} />
             {detail.permissions.comment.allowed ? (

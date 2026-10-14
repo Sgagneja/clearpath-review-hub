@@ -390,6 +390,21 @@ warning there when the review deadline threatens it
 **Instead of:** a separate pipeline or Kanban page. It would repeat the queue,
 and work that needs a separate page to be seen tends not to be seen.
 
+### The audit trail is organised by queue item
+
+An examiner asks about one ad: who approved it, what was said, what changed.
+So the audit trail lists queue items, most recent activity first, with each
+one's status, submitter, number of events and latest step. Opening an item
+shows its whole trail, oldest first, and the lead can download just that
+item's trail; that download is recorded on the item itself. Sign-ins,
+sign-outs, tracker imports and full downloads are still recorded, on a tab of
+their own (`ACTIVITY_ACTIONS` in `src/domain/audit.ts`). The full download
+still holds everything.
+
+**Instead of:** one feed of every event, newest first. It mixed every
+submission's steps with everyone's sign-ins, so following one item meant
+searching for it and reading around everything else.
+
 ### Proving the rules per product
 
 Every product has test cases with known right answers (42 in all:

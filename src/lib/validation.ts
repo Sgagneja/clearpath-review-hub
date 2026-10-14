@@ -167,6 +167,13 @@ export const auditFiltersSchema = z.object({
 });
 export type AuditFilters = z.infer<typeof auditFiltersSchema>;
 
+export const auditItemFiltersSchema = z.object({
+  q: z.string().trim().max(LIMITS.searchMax).catch(""),
+  status: z.enum([...STATUSES, "all"]).catch("all"),
+  page: z.coerce.number().int().min(1).max(10_000).catch(1),
+});
+export type AuditItemFilters = z.infer<typeof auditItemFiltersSchema>;
+
 /** Turns `URLSearchParams`-style input into a plain object of first values. */
 export function firstValues(
   params: Record<string, string | string[] | undefined>,

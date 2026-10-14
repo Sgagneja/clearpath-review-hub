@@ -15,6 +15,8 @@
     "test:watch": "vitest",
     "test:layout": "playwright test e2e/layout.spec.ts",
     "test:workflows": "playwright test e2e/workflows.spec.ts --project=laptop",
+    "test:sweep": "playwright test e2e/sweep.spec.ts --project=laptop",
+    "check:live": "BASE_URL=https://clearpath-review-hub.vercel.app playwright test e2e/sweep.spec.ts --project=laptop",
     "docs:screenshots": "playwright test e2e/screenshots.spec.ts --project=desktop --project=phone",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate.ts",
