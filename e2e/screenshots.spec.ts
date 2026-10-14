@@ -46,6 +46,8 @@ test("desktop screenshots", async ({ page }, testInfo) => {
   await shoot(page, "dashboard");
 
   await page.goto("/import/spreadsheet");
+  // The file is read in the browser, so wait for the page's script before picking one.
+  await page.waitForLoadState("networkidle");
   const example = await page.request.get("/import/example");
   await page.locator('input[type="file"]').setInputFiles({
     name: "ClearPath review tracker example.xlsx",
@@ -59,6 +61,7 @@ test("desktop screenshots", async ({ page }, testInfo) => {
   await shoot(page, "import-preview");
 
   await page.goto("/import/email");
+  await page.waitForLoadState("networkidle");
   await page.getByRole("button", { name: "Try an example email" }).click();
   await page.getByRole("button", { name: "Pull out the copy" }).click();
   await expect(page.getByRole("heading", { name: "The request" })).toBeVisible();
