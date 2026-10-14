@@ -187,7 +187,7 @@ third party sees who uses it. Icons are Lucide.
 **Why:** A compliance tool has to explain itself. Each rule is a short,
 readable function with a legal citation, a message and a suggested fix. The same
 copy always gets the same result, every result records which version of the
-rules produced it (currently `2026.10.2`), and every rule has tests. No
+rules produced it (currently `2026.10.3`), and every rule has tests. No
 marketing copy leaves the system.
 
 **Instead of:**
@@ -209,11 +209,14 @@ marketing copy leaves the system.
 
 ### Vitest and Playwright
 
-**Why:** Vitest runs the unit tests (335 of them, mostly on the business rules
+**Why:** Vitest runs the unit tests (337 of them, mostly on the business rules
 in `src/domain/`, including the 42 per-product pre-check cases) in about a
 second. Playwright does two jobs. It drives every workflow through the real
 screens as different people and checks the rows in all six tables
-(`e2e/workflows.spec.ts`), and it signs in as each role and checks that every
+(`e2e/workflows.spec.ts`). Those workflows are the README's worked examples,
+and after each step they check the team overview's counts and each version's
+score and deadline, so the README can't promise something the tool doesn't
+do. It also signs in as each role and checks that every
 page fits at five screen sizes. It also regenerates the README screenshots.
 GitHub Actions runs lint, type checks, unit tests and a production build on
 every push, then the layout and workflow checks against a fresh database
@@ -341,7 +344,7 @@ Internal terms are replaced with the team's own words:
 | Audit export (CSV) | Download for Excel |
 | System actor | Review Hub (automatic) |
 | Separation of duties | A second reviewer has to decide this |
-| Rules engine version | Rule set 2026.10.2 |
+| Rules engine version | Rule set 2026.10.3 |
 | Rules evaluated | 13 checks (personal loan and card), 15 (mortgage) |
 | Dashboard | Team overview |
 | Pipeline stage | Waiting for a reviewer, Under review, Back with marketing |
@@ -402,6 +405,16 @@ read as a promotional period; copy pasted from Word with non-breaking hyphens
 (“pre‑approved”) slipped past; and “prequalified means approved” wasn't caught
 on credit cards (it's now cited under UDAAP for cards). Old reviews keep the
 version that produced them, so their findings don't change.
+
+Checking the README's worked examples against what the app actually saves found
+one more, fixed in **Rule set 2026.10.3**. Browsers send a text box's line
+breaks as two characters, so saved copy was one character longer per line than
+what the writer's live pre-check had checked. “Prequalification presented as
+approval” looks 40 characters back from “prequalified”, and in the mortgage
+sample that one character cut “pre-approved” in half: the writer saw 9
+findings and the saved version recorded 8. Copy is now saved with the line
+breaks the writer saw, and the check matches whole phrases that overlap its
+window rather than cutting the text at the edge. A test pins both.
 
 The compliance team can see each product's cases in the Rule library, with
 whether each behaves as expected, and open any case in New submission to edit

@@ -439,15 +439,14 @@ const prequalImpliesApproval: Rule = {
   summary: "“Prequalified” must not be framed as an approval, lock or commitment to lend.",
   check({ text, productLine }) {
     const matches: TextMatch[] = [];
+    // Matched against the whole text, so a phrase straddling the edge of the window
+    // still counts, and "credit approval" is still recognised as a disclaimer.
+    const approvalLanguage = findAll(text, APPROVAL_LANGUAGE);
     for (const pq of findAll(text, PREQUAL)) {
-      const windowStart = Math.max(0, pq.start - 40);
-      const window = text.slice(windowStart, pq.end + 80);
-      if (contains(window, PREQUAL_DISCLAIMER)) continue;
-      const approvals = findAll(window, APPROVAL_LANGUAGE).map((m) => ({
-        start: m.start + windowStart,
-        end: m.end + windowStart,
-        text: m.text,
-      }));
+      const from = pq.start - 40;
+      const to = pq.end + 80;
+      if (contains(text.slice(Math.max(0, from), to), PREQUAL_DISCLAIMER)) continue;
+      const approvals = approvalLanguage.filter((m) => m.end > from && m.start < to);
       if (approvals.length > 0) matches.push(pq, ...approvals);
     }
     if (matches.length === 0) return [];

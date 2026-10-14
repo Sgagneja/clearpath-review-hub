@@ -12,11 +12,13 @@ so more campaigns get reviewed, on time, with less back-and-forth.
 
 ![The review queue: every open review, soonest deadline first](docs/screenshots/queue.jpg)
 
-**On this page:** [Why it exists](#why-it-exists) · [Try it](#try-it) ·
-[How a submission moves](#how-a-submission-moves) · [The pre-check rules](#the-pre-check-rules) ·
-[Scores and deadlines](#scores-and-deadlines) · [Who can do what](#who-can-do-what) ·
-[Key decisions](#key-decisions) · [Assumptions](#assumptions) · [How it's tested](#how-its-tested) ·
-[For developers](#for-developers)
+**On this page:** [Why it exists](#why-it-exists) · [Try it](#try-it) · [The screens](#the-screens) ·
+[How a submission moves](#how-a-submission-moves) · [Worked examples, end to end](#worked-examples-end-to-end) ·
+[The pre-check rules](#the-pre-check-rules) · [Scores and deadlines](#scores-and-deadlines) ·
+[Who can do what](#who-can-do-what) · [The data it expects](#the-data-it-expects) ·
+[What it stores](#what-it-stores) · [Key decisions](#key-decisions) · [Assumptions](#assumptions) ·
+[How it's tested](#how-its-tested) · [Known limits and what's next](#known-limits-and-whats-next) ·
+[What's changed](#whats-changed) · [For developers](#for-developers)
 
 ---
 
@@ -69,6 +71,9 @@ A five-minute walkthrough:
    Excel**) and **Import**, where **See a filled-in example** gives you a
    tracker to try.
 
+For the exact result to expect at every step, including how the team
+overview's counts move, follow the [worked examples](#worked-examples-end-to-end).
+
 | | |
 | --- | --- |
 | ![A review with the pre-check's findings marked in the copy](docs/screenshots/review.jpg) | ![The live pre-check while drafting](docs/screenshots/new-submission.jpg) |
@@ -80,6 +85,20 @@ It works the same on a phone, tablet, laptop or a large monitor:
   <img src="docs/screenshots/phone-queue.jpg" alt="The queue on a phone" width="260">
   <img src="docs/screenshots/phone-review.jpg" alt="A review on a phone" width="260">
 </p>
+
+## The screens
+
+| Screen | Who sees it | What it's for |
+| --- | --- | --- |
+| **Team overview** (`/dashboard`) | Compliance | Where compliance staff land. How much work is at each stage and which stage is slowest, who has what, what's closest to its deadline, the most common findings, and turnaround and on-time rates |
+| **My work** (`/dashboard/mine`) | Compliance | Your assigned reviews, unclaimed work, what's back with marketing and your recent decisions |
+| **Review queue** (`/queue`) | Everyone | Compliance sees every open review, soonest deadline first. Marketing sees only their own, as **My submissions** |
+| **New submission** | Everyone | Write or paste copy and watch the pre-check mark it as you type. One-click samples to try |
+| **Submission page** | Its submitter and compliance | The copy with findings marked, the lifecycle strip (every round through to launch), every version with tracked changes, comments, and the assign and decide controls |
+| **Revise** | Its submitter | Resubmit the next version after changes are requested |
+| **Import** | Compliance | Bring in an Excel or CSV tracker, or a review-request email |
+| **Audit trail** | Compliance (download: the lead) | Every event, newest first, and **Download for Excel** |
+| **Rule library** | Everyone | All 16 checks with their regulations, by product. Compliance also sees each product's test cases and can open one in New submission |
 
 ## How a submission moves
 
@@ -112,6 +131,114 @@ Every screen shows the same lifecycle. The team overview counts work at each
 stage and names the slowest; each submission's page shows its own path,
 round by round, ending at its launch date.
 
+## Worked examples, end to end
+
+Five runs through the whole tool, each with its exact input and what you
+should see at every step. They use only the built-in samples and example
+files, so anyone can repeat them.
+
+**Every number here is checked automatically.** The workflow tests
+([`e2e/workflows.spec.ts`](e2e/workflows.spec.ts), `npm run test:workflows`)
+do each step on the real screens as the person named, then check the team
+overview and the rows in the database. They run on every push, so if the
+tool stops doing any of this, the build fails.
+
+The **Overview** column is how the team overview's four counts move:
+**Waiting** for a reviewer, **Under review**, **Back with marketing** and
+**Decided** this week. A freshly reset demo starts at 4 waiting, 5 under review
+and 2 back with marketing (decided this week depends on the day). On the shared
+live demo other people may be working too, so watch the change, not the total.
+
+### 1. One campaign, two rounds, four people
+
+Priya's debt-consolidation email arrives with the usual mistakes, goes back
+for changes, and is approved as version 2.
+
+| Step | Who | Does | Should see | Overview |
+| --- | --- | --- | --- | --- |
+| 1 | Priya | **New submission** → the **Risky loan email** sample → a launch date three weeks out → **Submit for review** | 6 findings: 4 high (two guaranteed-outcome claims, an "as low as" rate without terms, a rate without its APR) and 2 low (urgency without a deadline, no "terms apply" line). Score 100, high risk, review deadline 48 hours from now | Waiting +1 |
+| 2 | Dana | Opens it → **Assign a reviewer**: Marcus Bell → **Assign** | "Assigned to Marcus Bell, not picked up yet" | No change |
+| 3 | Marcus | **Start review** | Status: In review | Waiting −1, Under review +1 |
+| 4 | Marcus | Posts a question, then **Request changes** with a note → **Send back for changes** | Status: Changes requested. The deadline pauses | Under review −1, Back with marketing +1, Decided +1 |
+| 5 | Priya | Replies, then **Revise and resubmit** with the **Compliant example** copy and a note → **Resubmit as version 2** | Version 2: no findings, score 0, low risk, a new 120-hour deadline. Still assigned to Marcus | Back with marketing −1, Waiting +1 |
+| 6 | Marcus | **Start review** | Status: In review | Waiting −1, Under review +1 |
+| 7 | Marcus | **Approve** → **Approve version 2** | The strip at the top reads Submitted · Version 1 sent back · Version 2 approved · Cleared to launch | Under review −1, Decided +1 |
+| 8 | Dana | **Audit trail** → **Download for Excel** | A CSV file that includes this submission. Marcus sees the button but can't use it. The download is recorded too | No change |
+| 9 | Priya | **Switch person** → **Sign out** | Back at sign-in. Opening the queue now sends her to sign-in | No change |
+
+**Net effect:** two decisions this week (one send-back, one approval) and every
+other count back where it started. That's one campaign cleared to launch.
+
+What's stored afterwards:
+
+- **submissions:** 1 row, approved and closed, on version 2.
+- **submission_versions:** 2 rows. Version 1 was sent back by Marcus; version 2 was approved by him.
+- **comments:** 4, in order: Marcus's question, his decision note, Priya's reply, her resubmission note.
+- **audit_events:** 11 for the submission, in order: `submission.created`,
+  `precheck.completed`, `reviewer.assigned`, `review.started`, `comment.added`,
+  `decision.changes_requested`, `comment.added`, `submission.resubmitted`,
+  `precheck.completed`, `review.started`, `decision.approved`. Separately,
+  `audit.exported` for Dana's download, and `session.signed_in` and
+  `session.signed_out` for Priya.
+- **users:** unchanged. The app never writes to it.
+
+### 2. A rejection
+
+| Step | Who | Does | Should see | Overview |
+| --- | --- | --- | --- | --- |
+| 1 | Priya | The **Mortgage prequal post** sample → **Submit for review** | 9 findings (4 high, 4 medium, 1 low). Score 100, high risk, 48-hour deadline | Waiting +1 |
+| 2 | Dana | **Start review** → **Reject** with a reason → **Reject submission** | The strip ends at "Not launching". Dana is recorded as the reviewer | Waiting −1, Decided +1 |
+| 3 | Priya | Opens it | No comment box: closed submissions take no more comments | No change |
+
+Stored: 1 submission (rejected, closed), 1 version, 1 comment (Dana's reason)
+and 4 audit events: `submission.created`, `precheck.completed`,
+`review.started`, `decision.rejected`.
+
+### 3. Trying a test case, and nobody reviewing their own copy
+
+| Step | Who | Does | Should see | Overview |
+| --- | --- | --- | --- | --- |
+| 1 | Marcus | **Rule library** → **Credit card** → open **Everyone qualifies** → **Try it yourself** | New submission with the case's name and copy filled in, under a "Test case" notice. Nothing has been saved | No change |
+| 2 | Marcus | Adds a launch date → **Submit for review** | 2 high findings ("Guaranteed approval" and "everyone qualifies" are each an absolute claim). Score 60, high risk, 48-hour deadline | Waiting +1 |
+| 3 | Marcus | Looks at his own submission | No **Start review** and no decision controls: he wrote it, so someone else reviews it | No change |
+
+Stored: nothing until step 2; then 1 submission and 2 audit events
+(`submission.created`, `precheck.completed`).
+
+### 4. Bringing in the old Excel tracker
+
+| Step | Who | Does | Should see | Overview |
+| --- | --- | --- | --- | --- |
+| 1 | Dana | **Import** → **From your Excel tracker** → **See a filled-in example**, then upload that file | "Ready to import": 8 reviews, no problems | No change |
+| 2 | Dana | **Import 8 reviews** | The import's summary page | Waiting +2, Under review +1, Back with marketing +1. Decided doesn't move: those decisions were weeks ago |
+| 3 | Dana | Uploads the same file again | "already imported this exact file". Nothing is added | No change |
+
+Where the eight reviews land:
+
+| In the tracker | Reviews | In Review Hub |
+| --- | --- | --- |
+| Approved | 3 | History, with the reviewer and the decision date |
+| Rejected | 1 | History |
+| Changes requested | 1 | Back with marketing |
+| In review | 1 | Under review with its reviewer: *October debt consolidation email*. Medium risk, so 72 hours from when it came in three days earlier: due 9:15 AM Eastern on import day |
+| Awaiting review | 2 | Waiting for a reviewer: *Rate drop alert email* (high risk, 48 hours from two days earlier: due 3:50 PM Eastern on import day) and *Student loan refinance landing page* (low risk, 120 hours: due four days later) |
+
+Deadlines count from when the tracker says the work came in, not from the
+import, so work that was already late arrives late and goes to the top of the
+queue. Stored: 1 import (with the file's fingerprint, which is what refuses the
+second upload), 8 submissions, and 9 audit events (one `submission.imported`
+per review plus one `import.tracker`).
+
+### 5. Bringing in a review-request email
+
+| Step | Who | Does | Should see | Overview |
+| --- | --- | --- | --- | --- |
+| 1 | Dana | **Import** → **From a review request email** → **Try an example email** → **Pull out the copy** | The request, read out of the thread: from Sofia Marquez, *First-home prequal landing page*, mortgage prequalification, landing page, and the launch date the email asks for. The note to compliance, sign-off, signature and earlier replies are set aside, and listed so you can check | No change |
+| 2 | Dana | **Add to the review queue** | A submission from Sofia: 6 findings (2 high, 3 medium, 1 low), score 100, high risk. Its 48-hour deadline counts from when Sofia sent the email (8:47 AM the day before), not from the import | Waiting +1 |
+| 3 | Dana | Tries the same email again | "This email is already in Review Hub as MKT-…". Nothing is added | No change |
+
+Stored: 1 import (an email, so no file name) and 1 submission.
+
 ## The pre-check rules
 
 Sixteen checks, written as plain rules rather than AI, so the same copy always
@@ -141,7 +268,7 @@ cards and 15 to mortgage prequalification**. They're the same on every channel.
 The checks read copy the way it actually arrives: pasted from Word or an email
 client, with curly quotes, non-breaking hyphens and “percent” spelled out. They
 live in [`src/domain/precheck/rules.ts`](src/domain/precheck/rules.ts); the
-version in use (currently **Rule set 2026.10.2**) is saved with every finding,
+version in use (currently **Rule set 2026.10.3**) is saved with every finding,
 so old reviews still show what the rules said at the time.
 
 **Proving the rules work, per product.** 42 test cases (15 personal loan, 13
@@ -202,6 +329,72 @@ sentence, not an error code.
 Trying a test case opens it in New submission with the copy filled in. Nothing
 is saved or sent until Submit is pressed. A marketer opening the same link gets
 a blank form.
+
+## The data it expects
+
+**A new submission:**
+
+| Field | What's accepted |
+| --- | --- |
+| Name | 4–120 characters |
+| Product | Personal loan, credit card or mortgage prequalification |
+| Channel | Email, landing page, social post, direct mail or display ad |
+| Target launch date | Today up to a year out |
+| Copy | 20–8,000 characters: subject line, body and fine print together |
+
+**A decision:** requesting changes or rejecting needs a reason of at least 15
+characters. Approving copy that still has high-severity findings needs a
+written reason for the record. Comments are up to 2,000 characters.
+
+**An Excel or CSV tracker:** one review per row in the app's template (there's
+a blank template and a filled-in example to download). Up to 500 reviews and
+2 MB per file, `.xlsx` or `.csv` only; old `.xls`, macro and password-protected
+workbooks are refused.
+
+| Column | Required | Notes |
+| --- | --- | --- |
+| Tracker ID | No | The old tracker's ID, kept for matching |
+| Asset name | Yes | 4–120 characters |
+| Product, Channel | Yes | From the template's dropdowns |
+| Launch date | Yes | Month/day/year |
+| Submitted by | Yes | Name or work email of someone already in the app |
+| Submitted on | Yes | Deadlines count from here. Eastern time; no time means midday |
+| Copy | Yes | All the customer-facing text in one cell |
+| Status | Yes | Awaiting review, In review, Changes requested, Approved or Rejected |
+| Reviewer | Unless awaiting review | Can't be the submitter |
+| Decision date | For decided rows | |
+| Reviewer notes | For changes requested and rejected | At least 15 characters |
+
+Every row is checked before anything is saved. Problems are listed by row and
+column in plain words, and nothing imports until every row passes.
+
+**A review-request email:** pasted with its From, Sent and Subject lines, or a
+saved email file up to 10 MB. It's read in the browser; the app suggests the
+copy, product, channel and launch date, the person confirms every field, and
+only those fields reach the server. It has to come from someone in marketing.
+
+The full guide for the compliance team is [docs/IMPORTING.md](docs/IMPORTING.md).
+
+## What it stores
+
+Six Postgres tables. Each column and the reasoning behind it is in
+[docs/DATA-MODEL.md](docs/DATA-MODEL.md).
+
+| Table | One row per | What's in it |
+| --- | --- | --- |
+| `users` | Person | Name, email, role, title, team. Only the seed writes it; the app only reads it |
+| `submissions` | Piece of marketing | Reference (MKT-1001…), product, channel, launch date, status, submitter, assignee, current version, risk, deadline, and where it was imported from |
+| `submission_versions` | Review round | The copy, its findings and score, the rule-set version, who submitted, who reviewed and when, who decided, and the outcome |
+| `comments` | Comment | Questions and replies, decision notes and resubmission notes, each marked as which |
+| `imports` | Tracker or email brought in | Spreadsheet or email, the file's name and fingerprint, who imported it, how many reviews |
+| `audit_events` | Change | Who (and their role at the time), what, which submission, the details. The database refuses edits, deletes and truncation |
+
+**The demo data** (`npm run db:seed`): 7 people, 24 submissions, 31 versions,
+34 comments and 120 audit events, with no imports yet. That's 4 waiting for a
+reviewer, 5 under review, 2 back with marketing, 10 approved and 3 rejected.
+Times are relative to when the seed runs, so as days pass more of it turns
+overdue; reseeding refreshes it. The seed refuses to reset anything but a
+local database unless given `--yes`.
 
 ## Key decisions
 
@@ -264,15 +457,52 @@ What we took as given because the brief didn't say. Each is one edit to change;
 
 | What | How | Size |
 | --- | --- | --- |
-| Business rules | Unit tests (Vitest) for workflow states, deadlines, scoring, permissions, metrics, imports and the lifecycle strip | 335 tests |
-| The pre-check, per product | The 42 test cases above, plus checks that every rule is covered for every product and every channel agrees | Part of the 335 |
-| Every workflow, every table | Playwright drives the real screens as four different people, then checks the rows in all six tables: a submission from draft to approval across two versions, a rejection, self-review being blocked, a test case saving nothing until submitted, spreadsheet and email imports (and duplicates being refused), the audit download and signing out | 5 workflows |
+| Business rules | Unit tests (Vitest) for workflow states, deadlines, scoring, permissions, metrics, imports and the lifecycle strip | 337 tests |
+| The pre-check, per product | The 42 test cases above, plus checks that every rule is covered for every product and every channel agrees | Part of the 337 |
+| Every workflow, every table | The [worked examples](#worked-examples-end-to-end), step by step on the real screens as four different people. After each step they check the team overview's counts, and they check the scores, deadlines and rows in all six tables | 5 workflows |
 | Every page on every screen | Signs in as each role and fails if anything pushes past the edge of a phone, tablet, laptop, desktop or 2560px screen | 5 sizes |
 
 All of it runs on every push in GitHub Actions
 ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)). The workflow tests
 write data, so they refuse to run against anything but a local database, and
 reset it before and after.
+
+## Known limits and what's next
+
+**Demo shortcuts.** Sign-in is “pick a person”; deadlines are calendar hours
+with no holiday calendar; only the words are reviewed, not images.
+
+**Before real customer data:** company single sign-on, server-side sessions, a
+database role that can only add to the audit trail, shared storage for rate
+limits, monitoring and a penetration test. Each is listed in
+[SECURITY.md](SECURITY.md).
+
+**At larger volume:** the audit download is built in one go and tops out
+around 18,000 events; the overview totals work in the app rather than the
+database, which strains at several thousand submissions; the queue shows at
+most 200 rows. [docs/PLAN.md](docs/PLAN.md#known-limits-at-larger-scale) has
+the fix for each.
+
+**Next, in order of throughput gained:** notifications; a forwarding address so
+review emails become submissions on their own; company sign-on; image and PDF
+review; business-hours deadlines; rule changes approved inside the app.
+
+## What's changed
+
+| Change | What it did |
+| --- | --- |
+| Build | The data model, the permanent audit trail, the workflow, permissions, deadlines, risk scoring and the pre-check; the queue, review, submit and revise pages, decisions, comments, imports, the audit download, the dashboard and the rule library |
+| Design pass | The editorial look, plain language everywhere, friendly error pages, and checks on every push |
+| Deploy | Live on Vercel with Postgres on Neon |
+| Team first | Compliance lands on the team overview, with My work one tab over; sign-in grouped by team |
+| Proving the rules | 42 per-product test cases. Writing them found four gaps in the rules, now fixed (see [docs/DECISIONS.md](docs/DECISIONS.md#proving-the-rules-per-product)) |
+| Rule library | Product tabs, and compliance-only test cases that open in New submission and save nothing until Submit |
+| Lifecycle strip | Each submission shows every round through to launch, in the space the old three-step strip took |
+| Workflow tests | Every workflow through the real screens, checked against all six tables. They found that Sign out didn't work on the live site: the sign-in cookie was being removed without the security settings it was created with. Fixed |
+| Worked examples | This README's end-to-end examples, with the tests checking every number in them. Checking them found that saved copy could get one fewer finding than the writer saw while typing; fixed in Rule set 2026.10.3 |
+
+The full history is in the
+[commit log](https://github.com/Sgagneja/clearpath-review-hub/commits/main).
 
 ## Documentation
 

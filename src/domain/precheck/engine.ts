@@ -7,7 +7,7 @@ import { normalizeForMatching } from "./text";
  * Bumped whenever a rule changes. Stored with every pre-check result so an
  * examiner can tell exactly which rule set produced a historical finding.
  */
-export const ENGINE_VERSION = "2026.10.2";
+export const ENGINE_VERSION = "2026.10.3";
 
 export interface PrecheckInput {
   text: string;

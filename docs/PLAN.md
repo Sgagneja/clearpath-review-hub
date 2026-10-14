@@ -155,6 +155,7 @@ These are on the team overview, computed from the same records the team works in
 | Per-product test cases for the pre-check, visible to compliance in the Rule library | Done |
 | Full lifecycle on each submission, in the space of the old progress strip | Done |
 | Every workflow tested end to end against every table | Done |
+| Worked examples in the README, with the team overview's counts checked at every step | Done |
 
 ## After this version
 

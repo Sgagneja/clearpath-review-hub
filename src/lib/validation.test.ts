@@ -45,6 +45,11 @@ describe("createSubmissionSchema", () => {
     expect(schema.safeParse({ ...valid, targetLaunchDate: "2026-10-12" }).success).toBe(true);
   });
 
+  it("saves line breaks the way the writer's live pre-check saw them", () => {
+    const parsed = schema.parse({ ...valid, body: "Consolidate your debt.\r\nOne payment, one rate.\r\n\r\nTerms apply.\r\n" });
+    expect(parsed.body).toBe("Consolidate your debt.\nOne payment, one rate.\n\nTerms apply.");
+  });
+
   it("caps the copy length", () => {
     expect(schema.safeParse({ ...valid, body: "a".repeat(8_001) }).success).toBe(false);
   });

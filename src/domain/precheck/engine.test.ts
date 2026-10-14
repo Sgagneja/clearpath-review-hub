@@ -213,6 +213,14 @@ describe("mortgage disclosures", () => {
     expect(finding.matches.map((m) => m.text)).toEqual(["prequalified", "approved"]);
   });
 
+  it("counts approval language that starts just outside the 40 characters before “prequalified”", () => {
+    // With \r\n the window begins inside "approved"; it has to be matched whole.
+    const lines = ["You're pre-approved to buy your first home! 🏡", "Get prequalified with ClearPath in minutes."];
+    const withNewlines = ruleIds(lines.join("\n"), "mortgage_prequal");
+    expect(withNewlines).toContain("prequal-implies-approval");
+    expect(ruleIds(lines.join("\r\n"), "mortgage_prequal")).toEqual(withNewlines);
+  });
+
   it("doesn't mistake “subject to credit approval” for an approval claim", () => {
     expect(
       ruleIds("Get prequalified in minutes. Not a commitment to lend. Subject to credit approval.", "mortgage_prequal"),

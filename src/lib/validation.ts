@@ -49,8 +49,11 @@ export function launchDateSchema(today: Date) {
     .refine((value) => value <= latest, "Launch dates more than a year out aren't accepted.");
 }
 
+// Browsers send a text box's line breaks as \r\n, but the live pre-check sees \n.
+// Saving the copy as the writer saw it keeps every finding and its position identical.
 const bodySchema = z
   .string()
+  .overwrite((value) => value.replace(/\r\n?/g, "\n"))
   .trim()
   .min(LIMITS.bodyMin, `Paste the full copy (at least ${LIMITS.bodyMin} characters).`)
   .max(LIMITS.bodyMax, `Copy is limited to ${LIMITS.bodyMax.toLocaleString("en-US")} characters.`);
