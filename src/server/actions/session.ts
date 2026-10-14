@@ -9,7 +9,7 @@ import { personaSchema, safeNextPath } from "@/lib/validation";
 import { recordAudit } from "../audit";
 import { getCurrentUser, homePathFor } from "../auth";
 import { UserFacingError } from "../errors";
-import { formValues, guardSignIn, parse, runAction } from "../guard";
+import { formValues, guardSignIn, guardSignOut, parse, runAction } from "../guard";
 import { endSession, startSession } from "../session";
 
 /**
@@ -49,7 +49,7 @@ export async function signInAs(_prev: FormState, formData: FormData): Promise<Fo
 
 export async function signOut(): Promise<void> {
   await runAction(async () => {
-    await guardSignIn();
+    await guardSignOut();
     const user = await getCurrentUser();
     if (user) {
       await recordAudit(getDb(), user, { action: "session.signed_out", summary: `${user.name} signed out` });

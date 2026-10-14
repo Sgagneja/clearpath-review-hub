@@ -73,6 +73,7 @@ and audit trail only need a person's id and role.
 - **Redirects** after sign-in only go to paths on this site.
 - **Rate limits.** Each person can make 20 changes in a burst, then one every
   2 seconds. Sign-in is limited to 10 per address, then one every 6 seconds.
+  Signing out isn't limited: it only ends the caller's own session.
 
 ### The browser
 

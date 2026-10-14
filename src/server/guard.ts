@@ -68,6 +68,14 @@ export async function guardSignIn(): Promise<void> {
   if (!limit.ok) throw new UserFacingError(rateLimitMessage(limit.retryAfterMs));
 }
 
+/**
+ * Signing out only ends the caller's own session, and records at most one event per
+ * session, so it isn't rate limited: nobody should be made to wait to leave.
+ */
+export async function guardSignOut(): Promise<void> {
+  await assertSameOrigin();
+}
+
 /** Thrown by `parse()` and turned into inline field errors by `runAction()`. */
 class InvalidInputError extends Error {
   constructor(readonly fieldErrors: Record<string, string>) {
