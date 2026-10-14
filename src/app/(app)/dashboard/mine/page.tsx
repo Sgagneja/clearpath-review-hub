@@ -23,7 +23,7 @@ const linkClasses = "text-[0.8125rem] font-medium text-brand-700 hover:underline
  */
 export default async function MyWorkPage() {
   const user = await requireUser();
-  const access = authorize(user, "dashboard.view");
+  const access = authorize(user, "mywork.view");
   if (!access.allowed) return <AccessDenied reason={access.reason} home={homePathFor(user.role)} />;
 
   const now = new Date();
@@ -32,7 +32,12 @@ export default async function MyWorkPage() {
 
   return (
     <div className="space-y-6">
-      <OverviewHeader active="mine" context={`${user.name} · ${user.title}`} myCount={myCount} />
+      <OverviewHeader
+        active="mine"
+        context={`${user.name} · ${user.title}`}
+        myCount={myCount}
+        showTeam={can(user, "dashboard.view")}
+      />
 
       <MyLine work={work} />
 

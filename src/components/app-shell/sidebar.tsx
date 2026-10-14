@@ -12,11 +12,13 @@ import { PersonaSwitcher } from "./persona-switcher";
  * That is convenience, not security: every page and action checks again.
  */
 function navItems(user: CurrentUser, queueCount: number): NavItem[] {
-  const compliance = can(user, "queue.view_all");
-  // Compliance starts from the team view; the count is their own share of it, under My work.
+  const reviews = can(user, "queue.review");
+  const team = can(user, "dashboard.view");
+  // The lead starts from the team view, reviewers from their own work; the count is what's waiting on them.
   const items: (NavItem | false)[] = [
-    can(user, "dashboard.view") && { key: "dashboard", href: "/dashboard", label: "Team overview", badge: queueCount },
-    { key: "queue", href: "/queue", label: compliance ? "Review queue" : "My submissions", badge: compliance ? undefined : queueCount },
+    team && { key: "dashboard", href: "/dashboard", label: "Team overview", badge: queueCount },
+    !team && can(user, "mywork.view") && { key: "mine", href: "/dashboard/mine", label: "My work", badge: queueCount },
+    { key: "queue", href: "/queue", label: reviews ? "Review queue" : "My submissions", badge: reviews ? undefined : queueCount },
     { key: "new", href: "/submissions/new", label: "New submission" },
     can(user, "import.run") && { key: "import", href: "/import", label: "Import" },
     can(user, "audit.view") && { key: "audit", href: "/audit", label: "Audit trail" },

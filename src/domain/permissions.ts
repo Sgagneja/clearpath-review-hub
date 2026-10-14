@@ -16,8 +16,10 @@ export type Action =
   | "submission.assign"
   | "submission.decide"
   | "submission.resubmit"
+  | "queue.review"
   | "queue.view_all"
   | "dashboard.view"
+  | "mywork.view"
   | "audit.view"
   | "audit.export"
   | "import.run"
@@ -46,24 +48,47 @@ const isCompliance = (role: Role) =>
 const SELF_REVIEW =
   "Separation of duties: you authored this submission, so another reviewer has to decide it.";
 
+/**
+ * Who can open a submission. Everyone sees their own work. A reviewer also sees the
+ * reviews assigned to them and the ones nobody has picked up yet, so they can take one.
+ * Only the Compliance Lead sees everyone's. `visibleTo` in src/server/queries/queue.ts
+ * is the same rule in SQL, so the queue never lists what can't be opened.
+ */
+export function canOpen(actor: Actor, submission: SubmissionScope): boolean {
+  if (actor.role === "compliance_lead" || submission.submitterId === actor.id) return true;
+  if (actor.role !== "reviewer") return false;
+  return (
+    submission.assigneeId === actor.id ||
+    (submission.assigneeId === null && submission.status === "submitted")
+  );
+}
+
 const ROLE_ONLY: Partial<Record<Action, (role: Role) => AuthzResult>> = {
   "submission.create": () => ALLOW,
+  "queue.review": (role) =>
+    isCompliance(role) ? ALLOW : deny("Only compliance reviews copy."),
+  // Everything below shows other people's work, so it's the lead's alone.
   "queue.view_all": (role) =>
-    isCompliance(role) ? ALLOW : deny("Only compliance can see the full queue."),
+    role === "compliance_lead"
+      ? ALLOW
+      : deny("Only the Compliance Lead sees every review. Yours are under My work."),
   "dashboard.view": (role) =>
-    isCompliance(role) ? ALLOW : deny("The team overview is for the compliance team."),
+    role === "compliance_lead" ? ALLOW : deny("The team overview is for the Compliance Lead."),
+  "mywork.view": (role) =>
+    isCompliance(role) ? ALLOW : deny("My work is for reviewers. Your own copy is under My submissions."),
   "audit.view": (role) =>
-    isCompliance(role) ? ALLOW : deny("The audit trail is for the compliance team."),
+    role === "compliance_lead"
+      ? ALLOW
+      : deny("The audit trail is for the Compliance Lead. Each submission's history is on its own page."),
   "audit.export": (role) =>
     role === "compliance_lead"
       ? ALLOW
       : deny("Only a Compliance Lead can export the audit trail."),
-  // Imports attribute work to other people (who submitted, who decided), so
-  // they're limited to the team that owns the review record.
+  // Imports attribute work to other people (who submitted, who decided).
   "import.run": (role) =>
-    isCompliance(role)
+    role === "compliance_lead"
       ? ALLOW
-      : deny("Bringing in old trackers and emails is for the compliance team. To send new copy, use New submission."),
+      : deny("Bringing in old trackers and emails is for the Compliance Lead. To send new copy, use New submission."),
   // Checking that the checks behave is a compliance control. Marketing practises
   // on their own copy in New submission, which saves nothing until they submit.
   "rules.test": (role) =>
@@ -91,14 +116,10 @@ export function authorize(
 
   switch (action) {
     case "submission.view":
-      return isOwner || isCompliance(actor.role)
-        ? ALLOW
-        : deny("You can only view your own submissions.");
+      return canOpen(actor, submission) ? ALLOW : deny("You can only open your own work.");
 
     case "submission.comment":
-      if (!isOwner && !isCompliance(actor.role)) {
-        return deny("You can only comment on your own submissions.");
-      }
+      if (!canOpen(actor, submission)) return deny("You can only comment on your own work.");
       return isClosed ? deny("This submission is closed.") : ALLOW;
 
     case "submission.claim":

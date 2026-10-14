@@ -39,10 +39,14 @@ and audit trail only need a person's id and role.
   decide what to show; hiding a button is never the protection.
 - Separation of duties: nobody can start, decide or be assigned a review of
   their own copy, the Compliance Lead included.
-- Submitters only see their own submissions. Opening anyone else's shows "not
-  found", which doesn't confirm it exists.
-- Only the Compliance Lead can assign reviewers or download the audit trail.
-  Only the compliance team can import.
+- People only see their own work. Submitters see what they sent. Reviewers see
+  what's assigned to them and unassigned reviews they could pick up, never a
+  colleague's. Opening anything else shows "not found", which doesn't confirm
+  it exists. The queue's database query applies the same rule, so it never
+  lists what can't be opened.
+- Only the Compliance Lead sees everyone's work (the team overview, the full
+  queue and the audit trail), imports, assigns reviewers and downloads the
+  audit trail.
 
 ### A record that can't be rewritten
 

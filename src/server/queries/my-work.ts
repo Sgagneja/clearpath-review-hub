@@ -27,7 +27,7 @@ const RECENT_DECISIONS = 5;
  * disagree.
  */
 export async function getMyWork(actor: CurrentUser, now = new Date()) {
-  assertCan(actor, "dashboard.view");
+  assertCan(actor, "mywork.view");
   const base = queueFiltersSchema.parse({});
   const [mine, unclaimed, rounds] = await Promise.all([
     getQueue(actor, { ...base, assignee: "me" }, now),

@@ -15,7 +15,8 @@ export async function signInOn(page: Page, firstName: FirstName) {
   const signedIn = () => new URL(page.url()).pathname !== "/login";
   for (let attempt = 1; ; attempt++) {
     await page.goto("/login");
-    await page.getByRole("button", { name: new RegExp(`Continue as ${firstName}`) }).click();
+    // Featured people and the rest of the team are both buttons that start with the person's name.
+    await page.getByRole("button", { name: new RegExp(`^${firstName} `) }).click();
     await expect
       .poll(async () => signedIn() || (await slowDown.count().catch(() => 0)) > 0, { timeout: 30_000 })
       .toBe(true);

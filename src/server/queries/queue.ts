@@ -63,9 +63,16 @@ function deriveSla(
   return { ...result, dueAt };
 }
 
-/** Submitters only ever see their own work; compliance sees everything. */
+/** `canOpen` in src/domain/permissions.ts, in SQL: the queue lists only what its reader can open. */
 function visibleTo(actor: CurrentUser): SQL | undefined {
-  return can(actor, "queue.view_all") ? undefined : eq(submissions.submitterId, actor.id);
+  if (can(actor, "queue.view_all")) return undefined;
+  const own = eq(submissions.submitterId, actor.id);
+  if (!can(actor, "queue.review")) return own;
+  return or(
+    own,
+    eq(submissions.assigneeId, actor.id),
+    and(isNull(submissions.assigneeId), eq(submissions.status, "submitted")),
+  );
 }
 
 function filterConditions(actor: CurrentUser, filters: QueueFilters): SQL[] {

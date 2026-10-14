@@ -29,7 +29,7 @@ is one edit, not a hunt.
 | Marketing publishes on five channels: email, landing pages, social posts, direct mail and display ads | `src/domain/types.ts` |
 | One compliance team: three reviewers (a generalist, a mortgage specialist, a card specialist) and one Compliance Lead, serving three marketers | `scripts/seed-data.ts` |
 | The team works in US Eastern time. Every date and time on screen and in downloads is Eastern, whatever the viewer's own time zone | `src/lib/dates.ts` |
-| Three roles are enough: Submitter, Reviewer, Compliance Lead. A Compliance Lead can do everything a reviewer can, plus assign work and download the audit trail | `src/domain/permissions.ts` |
+| Three roles are enough: Submitter, Reviewer, Compliance Lead. A Compliance Lead can do everything a reviewer can, plus see everyone's work, import, assign work and download the audit trail | `src/domain/permissions.ts` |
 | Users aren't technical. Nothing on screen should need an explanation of how the system works | Throughout |
 
 ### The review process
@@ -209,7 +209,7 @@ marketing copy leaves the system.
 
 ### Vitest and Playwright
 
-**Why:** Vitest runs the unit tests (337 of them, mostly on the business rules
+**Why:** Vitest runs the unit tests (339 of them, mostly on the business rules
 in `src/domain/`, including the 42 per-product pre-check cases) in about a
 second. Playwright does two jobs. It drives every workflow through the real
 screens as different people and checks the rows in all six tables
@@ -363,19 +363,25 @@ The same rules run in the browser as the submitter types, with the score and
 findings updating live. The server re-runs the check on submit, so the browser
 version is a preview, never the record.
 
-### The team comes first
+### The lead sees the team; everyone else sees their own work
 
-Compliance staff land on the **Team overview**, not a personal inbox. The
-bottleneck is the team's, so the first screen shows how much work sits at each
-stage, which stage is slowest (with one line on what to do about it), who has
-what and how close it is to its deadline, what's nearest to overdue, and the
-findings marketing trips over most. Each person's own work is the **My work**
-tab: what's assigned to them, what nobody has picked up, what's back with
-marketing, and their recent decisions.
+The Compliance Lead lands on the **Team overview**. The bottleneck is the
+team's, so the first screen shows how much work sits at each stage, which
+stage is slowest (with one line on what to do about it), who has what and how
+close it is to its deadline, what's nearest to overdue, and the findings
+marketing trips over most. The lead's own work is the **My work** tab.
 
-**Instead of:** a personal dashboard first, with a separate admin page for the
-lead. Reviewers would never see the team's queue building up, and the lead
-would have one more page to remember.
+Everyone else sees only their own work. Reviewers land on **My work**: what's
+assigned to them, what nobody has picked up, what's back with marketing, and
+their recent decisions. Their queue holds the same: their reviews and the
+unclaimed ones, so they can take one. A review assigned to a colleague isn't
+listed, and its address shows "not found". Marketers see only what they sent.
+The rule lives in one function (`canOpen` in `src/domain/permissions.ts`),
+and the queue's query applies the same rule in SQL.
+
+**Instead of:** every reviewer seeing the whole team's work. Unreleased copy
+and other people's reviews would be open to anyone on the team, which isn't
+need-to-know. The lead is the one person whose job needs the whole picture.
 
 ### The whole lifecycle, without extra pages
 

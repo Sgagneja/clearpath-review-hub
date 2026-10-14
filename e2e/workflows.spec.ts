@@ -244,10 +244,22 @@ test("a submission from first draft to approval, across four people", async ({ b
     ]);
   });
 
-  await test.step("the lead downloads the audit trail, and that's recorded too", async () => {
-    await marcus.goto("/audit");
-    await expect(marcus.getByRole("button", { name: "Download for Excel" }), "exporting is for the lead").toBeDisabled();
+  await test.step("a reviewer sees only their own work; the team's pages are the lead's", async () => {
+    const { page: alana, errors } = await openAs(browser, "Alana");
+    watches.push(errors);
+    errors.allowMissing(`/submissions/${reference}`);
+    await alana.goto("/queue?status=all");
+    await expect(alana.getByText(reference), "Marcus's review isn't in Alana's queue").toHaveCount(0);
+    await alana.goto(`/submissions/${reference}`);
+    await expect(alana.getByRole("heading", { name: "Nothing filed under that reference" })).toBeVisible();
 
+    for (const path of ["/dashboard", "/audit", "/import"]) {
+      await marcus.goto(path);
+      await expect(marcus.getByText(/is for the Compliance Lead/), path).toBeVisible();
+    }
+  });
+
+  await test.step("the lead downloads the audit trail, and that's recorded too", async () => {
     const exports = async () =>
       (await sql`select count(*)::int as count from audit_events where action = 'audit.exported' and actor_id = 'u_dana'`)[0].count;
     const before = await exports();

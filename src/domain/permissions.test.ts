@@ -29,10 +29,18 @@ describe("role-only permissions", () => {
     }
   });
 
-  it("keeps the overview, full queue, audit trail and rule test cases away from submitters", () => {
-    for (const action of ["dashboard.view", "queue.view_all", "audit.view", "rules.test"] as const) {
+  it("gives reviewers their own work, the queue and the test cases, but not submitters", () => {
+    for (const action of ["queue.review", "mywork.view", "rules.test"] as const) {
       expect(can(priya, action)).toBe(false);
       expect(can(marcus, action)).toBe(true);
+      expect(can(dana, action)).toBe(true);
+    }
+  });
+
+  it("keeps everything that shows other people's work to the Compliance Lead", () => {
+    for (const action of ["dashboard.view", "queue.view_all", "audit.view", "import.run"] as const) {
+      expect(can(priya, action)).toBe(false);
+      expect(can(marcus, action)).toBe(false);
       expect(can(dana, action)).toBe(true);
     }
   });
@@ -47,7 +55,17 @@ describe("viewing and commenting", () => {
   it("lets submitters see only their own submissions", () => {
     expect(can(priya, "submission.view", submission())).toBe(true);
     expect(can(jordan, "submission.view", submission())).toBe(false);
+  });
+
+  it("shows a reviewer their own reviews and the unclaimed ones, never a colleague's", () => {
     expect(can(marcus, "submission.view", submission())).toBe(true);
+    expect(can(marcus, "submission.view", submission({ assigneeId: marcus.id, status: "approved" }))).toBe(true);
+    expect(can(marcus, "submission.view", submission({ submitterId: marcus.id, assigneeId: alana.id }))).toBe(true);
+    for (const status of ["submitted", "in_review", "changes_requested", "approved", "rejected"] as const) {
+      expect(can(marcus, "submission.view", submission({ assigneeId: alana.id, status }))).toBe(false);
+      expect(can(marcus, "submission.comment", submission({ assigneeId: alana.id, status }))).toBe(false);
+      expect(can(dana, "submission.view", submission({ assigneeId: alana.id, status }))).toBe(true);
+    }
   });
 
   it("closes comments once a submission is decided", () => {

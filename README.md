@@ -91,14 +91,14 @@ It works the same on a phone, tablet, laptop or a large monitor:
 
 | Screen | Who sees it | What it's for |
 | --- | --- | --- |
-| **Team overview** (`/dashboard`) | Compliance | Where compliance staff land. How much work is at each stage and which stage is slowest, who has what, what's closest to its deadline, the most common findings, and turnaround and on-time rates |
-| **My work** (`/dashboard/mine`) | Compliance | Your assigned reviews, unclaimed work, what's back with marketing and your recent decisions |
-| **Review queue** (`/queue`) | Everyone | Compliance sees every open review, soonest deadline first. Marketing sees only their own, as **My submissions** |
+| **Team overview** (`/dashboard`) | Compliance Lead | Where the lead lands. How much work is at each stage and which stage is slowest, who has what, what's closest to its deadline, the most common findings, and turnaround and on-time rates |
+| **My work** (`/dashboard/mine`) | Compliance | Where reviewers land. Your assigned reviews, unclaimed work, what's back with marketing and your recent decisions |
+| **Review queue** (`/queue`) | Everyone | Soonest deadline first. The lead sees every open review; a reviewer sees theirs and the unclaimed ones. Marketing sees only their own, as **My submissions** |
 | **New submission** | Everyone | Write or paste copy and watch the pre-check mark it as you type. One-click samples to try |
-| **Submission page** | Its submitter and compliance | The copy with findings marked, the lifecycle strip (every round through to launch), every version with tracked changes, comments, and the assign and decide controls |
+| **Submission page** | Its submitter, its reviewer and the lead | The copy with findings marked, the lifecycle strip (every round through to launch), every version with tracked changes, comments, and the assign and decide controls |
 | **Revise** | Its submitter | Resubmit the next version after changes are requested |
-| **Import** | Compliance | Bring in an Excel or CSV tracker, or a review-request email |
-| **Audit trail** | Compliance (download: the lead) | One row per queue item, most recent activity first. Each opens that item's own trail, oldest first, which the lead can download on its own. Sign-ins, tracker imports and downloads sit on a separate tab, so they never clutter an item's record |
+| **Import** | Compliance Lead | Bring in an Excel or CSV tracker, or a review-request email |
+| **Audit trail** | Compliance Lead | One row per queue item, most recent activity first. Each opens that item's own trail, oldest first, which the lead can download on its own. Sign-ins, tracker imports and downloads sit on a separate tab, so they never clutter an item's record |
 | **Rule library** | Everyone | All 16 checks with their regulations, by product. Compliance also sees each product's test cases and can open one in New submission |
 
 ## How a submission moves
@@ -316,12 +316,18 @@ or after launch day.
 | Send copy for review, see the live pre-check | ✓ | ✓ | ✓ |
 | See and comment on their own submissions | ✓ | ✓ | ✓ |
 | Revise and resubmit their own copy after changes are requested | ✓ | ✓ | ✓ |
-| See the whole queue, the team overview and the audit trail | | ✓ | ✓ |
+| See the reviews assigned to them and the ones nobody has picked up yet (**My work**, **Review queue**) | | ✓ | ✓ |
 | Pick up unassigned work; review and decide what's assigned to them | | ✓ | ✓ |
 | See the rule test cases and try them | | ✓ | ✓ |
-| Bring in old Excel trackers and review emails | | ✓ | ✓ |
+| See everyone's work: the whole queue, the team overview and the audit trail | | | ✓ |
+| Bring in old Excel trackers and review emails | | | ✓ |
 | Assign or reassign reviewers; decide anyone's review | | | ✓ |
 | Download the audit trail | | | ✓ |
+
+**People only see their own work.** A marketer sees what they sent. A reviewer
+sees what's assigned to them, plus unassigned reviews so they can pick one up;
+a review assigned to a colleague doesn't appear in their queue, and opening its
+address shows "not found". Only the Compliance Lead sees everyone's.
 
 Two rules hold for everyone, the lead included: **nobody reviews their own
 copy**, and **closed submissions take no more comments**. Every rule is
@@ -408,9 +414,10 @@ turned down, is in [docs/DECISIONS.md](docs/DECISIONS.md).
   finding to an examiner and get the same answer twice. Each rule is a short,
   tested function with a legal citation and a suggested fix, and unreleased
   marketing copy never goes to a third party.
-- **Built for the team first.** Compliance lands on the team overview, not a
-  personal inbox, because the bottleneck is the team's. Each person's own work
-  is one tab over.
+- **The lead sees the team; everyone else sees their own work.** The Compliance
+  Lead lands on the team overview, because the bottleneck is the team's, with
+  their own work one tab over. Reviewers land on My work and only ever see
+  their own reviews and the unclaimed ones; marketers see only what they sent.
 - **The whole lifecycle, without extra pages.** The overview counts each stage
   and names the slowest; each submission shows its own rounds. No separate
   "pipeline" page to maintain or to forget to check.
@@ -460,8 +467,8 @@ What we took as given because the brief didn't say. Each is one edit to change;
 
 | What | How | Size |
 | --- | --- | --- |
-| Business rules | Unit tests (Vitest) for workflow states, deadlines, scoring, permissions, metrics, imports and the lifecycle strip | 337 tests |
-| The pre-check, per product | The 42 test cases above, plus checks that every rule is covered for every product and every channel agrees | Part of the 337 |
+| Business rules | Unit tests (Vitest) for workflow states, deadlines, scoring, permissions, metrics, imports and the lifecycle strip | 339 tests |
+| The pre-check, per product | The 42 test cases above, plus checks that every rule is covered for every product and every channel agrees | Part of the 339 |
 | Every workflow, every table | The [worked examples](#worked-examples-end-to-end), step by step on the real screens as four different people. After each step they check the team overview's counts, and they check the scores, deadlines and rows in all six tables | 5 workflows |
 | Every page on every screen | Signs in as each role and fails if anything pushes past the edge of a phone, tablet, laptop, desktop or 2560px screen | 5 sizes |
 | No errors, anywhere | Every browser in the tests above is watched: an uncaught error, a console error, a server error, a broken link or one of the app's error screens fails the run. The sweep also clicks through the menu and opens every page each role can reach, and runs against the live site with `npm run check:live` | 3 roles, ~40 pages each |
@@ -506,6 +513,7 @@ review; business-hours deadlines; rule changes approved inside the app.
 | Worked examples | This README's end-to-end examples, with the tests checking every number in them. Checking them found that saved copy could get one fewer finding than the writer saw while typing; fixed in Rule set 2026.10.3 |
 | Audit trail by queue item | The audit trail lists queue items instead of every event mixed together. Each item opens its own trail and downloads on its own; sign-ins, tracker imports and downloads have their own tab |
 | Error sweep | Every test now fails on any error a person would see, and a read-only sweep checks every page of the live site in about two minutes |
+| Own work only | Reviewers see only their own reviews and the unclaimed ones; the team overview, the full queue, the audit trail and imports are the Compliance Lead's |
 
 The full history is in the
 [commit log](https://github.com/Sgagneja/clearpath-review-hub/commits/main).

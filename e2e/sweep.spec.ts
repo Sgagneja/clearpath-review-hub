@@ -24,7 +24,7 @@ test.use({ actionTimeout: 15_000 });
 
 const PEOPLE: { name: FirstName; role: string; menu: string[] }[] = [
   { name: "Priya", role: "marketing", menu: ["My submissions", "New submission", "Rule library"] },
-  { name: "Marcus", role: "reviewer", menu: ["Team overview", "Review queue", "New submission", "Import", "Audit trail", "Rule library"] },
+  { name: "Marcus", role: "reviewer", menu: ["My work", "Review queue", "New submission", "Rule library"] },
   { name: "Dana", role: "compliance lead", menu: ["Team overview", "Review queue", "New submission", "Import", "Audit trail", "Rule library"] },
 ];
 

@@ -12,10 +12,36 @@ const DESCRIPTIONS: Record<Tab, string> = {
 };
 
 /**
- * Top of the overview. The whole team comes first; your own work is one tab
- * over, so nobody's view of the bottleneck stops at their own desk.
+ * Top of the overview. For the Compliance Lead the whole team comes first and
+ * their own work is one tab over. Reviewers only see their own work, so for
+ * them it's a page of its own, without the tabs.
  */
-export function OverviewHeader({ active, context, myCount }: { active: Tab; context: string; myCount: number }) {
+export function OverviewHeader({
+  active,
+  context,
+  myCount,
+  showTeam = true,
+}: {
+  active: Tab;
+  context: string;
+  myCount: number;
+  showTeam?: boolean;
+}) {
+  if (!showTeam) {
+    return (
+      <PageHeader
+        context={context}
+        title="My work"
+        description="What's waiting on you, what nobody has picked up yet, and how your reviews have gone."
+        actions={
+          <Link href="/queue" className={buttonClasses({ variant: "secondary" })}>
+            Open the queue
+            <ArrowRight aria-hidden="true" />
+          </Link>
+        }
+      />
+    );
+  }
   return (
     <div>
       <PageHeader

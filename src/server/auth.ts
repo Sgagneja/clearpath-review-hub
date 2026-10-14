@@ -49,7 +49,8 @@ export async function requireUser(): Promise<CurrentUser> {
   return user;
 }
 
-/** Where each role lands after signing in: compliance on the team overview, marketing on their own submissions. */
-export function homePathFor(role: Role): "/queue" | "/dashboard" {
-  return role === "submitter" ? "/queue" : "/dashboard";
+/** Where each role lands after signing in: the lead on the team overview, reviewers on their own work, marketing on their own submissions. */
+export function homePathFor(role: Role): "/queue" | "/dashboard" | "/dashboard/mine" {
+  if (role === "compliance_lead") return "/dashboard";
+  return role === "reviewer" ? "/dashboard/mine" : "/queue";
 }

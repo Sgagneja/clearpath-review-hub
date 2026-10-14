@@ -1,14 +1,15 @@
 "use client";
 
-import { BookOpenCheck, FilePlus2, Import, Inbox, LayoutDashboard, ScrollText, type LucideIcon } from "lucide-react";
+import { BookOpenCheck, ClipboardList, FilePlus2, Import, Inbox, LayoutDashboard, ScrollText, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/cn";
 
-export type NavKey = "dashboard" | "queue" | "new" | "import" | "audit" | "rules";
+export type NavKey = "dashboard" | "mine" | "queue" | "new" | "import" | "audit" | "rules";
 
 const ICONS: Record<NavKey, LucideIcon> = {
   dashboard: LayoutDashboard,
+  mine: ClipboardList,
   queue: Inbox,
   new: FilePlus2,
   import: Import,

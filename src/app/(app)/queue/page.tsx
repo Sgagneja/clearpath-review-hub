@@ -54,17 +54,21 @@ export default async function QueuePage({ searchParams }: PageProps<"/queue">) {
   const filters = queueFiltersSchema.parse(firstValues(await searchParams));
   const now = new Date();
   const [{ rows, summary, truncated }, directory] = await Promise.all([getQueue(user, filters, now), getDirectory()]);
-  const compliance = can(user, "queue.view_all");
+  const compliance = can(user, "queue.review");
+  const everyone = can(user, "queue.view_all");
   const isFiltered = filters.q !== "" || filters.product !== "all" || filters.risk !== "all" || filters.assignee !== "all";
+  const deadlines = "Riskier copy gets less time: 48 hours for high risk, 72 for medium, 120 for low.";
 
   return (
     <div className="space-y-6">
       <PageHeader
         title={compliance ? "Review queue" : "My submissions"}
         description={
-          compliance
-            ? "Everything waiting on compliance, soonest deadline first. Riskier copy gets less time: 48 hours for high risk, 72 for medium, 120 for low."
-            : "Track every asset you've sent to compliance. Anything sent back with changes is waiting on you."
+          everyone
+            ? `Everything waiting on compliance, soonest deadline first. ${deadlines}`
+            : compliance
+              ? `Your reviews and the ones nobody has picked up yet, soonest deadline first. ${deadlines}`
+              : "Track every asset you've sent to compliance. Anything sent back with changes is waiting on you."
         }
         actions={
           <Link href="/submissions/new" className={buttonClasses({ variant: "brand" })}>
@@ -81,7 +85,7 @@ export default async function QueuePage({ searchParams }: PageProps<"/queue">) {
           <StatusTabs filters={filters} counts={summary.byStatus} />
           <QueueFilters
             filters={filters}
-            reviewers={directory.people.filter((p) => p.role !== "submitter")}
+            reviewers={everyone ? directory.people.filter((p) => p.role !== "submitter") : []}
             showAssignee={compliance}
             isFiltered={isFiltered}
           />
