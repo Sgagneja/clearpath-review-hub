@@ -67,14 +67,16 @@ Each feature exists to remove one kind of coordination work:
 6. **Bring the history across.** The team's existing Excel tracker and review
    emails can be imported, so the switch doesn't start from an empty system or
    leave open work behind in the old one. See [IMPORTING.md](IMPORTING.md).
-7. **See where the time goes.** The dashboard shows turnaround, on-time rate,
-   first-time approvals, time spent in each stage, reviewer workload, weekly
-   volume and which guidelines marketing trips over most. That last one is the
-   training list that cuts future rounds.
+7. **See where the time goes.** The team overview, the first screen for
+   compliance, shows how much work sits at each stage and which stage is
+   slowest, who has what and how close it is to its deadline, turnaround,
+   on-time rate, first-time approvals, weekly volume and which guidelines
+   marketing trips over most. That last one is the training list that cuts
+   future rounds.
 
 ## How we measure success
 
-These are on the dashboard, computed from the same records the team works in
+These are on the team overview, computed from the same records the team works in
 (the definitions are unit-tested in `src/domain/metrics.ts`):
 
 | Measure | Definition | Direction |
@@ -148,7 +150,11 @@ These are on the dashboard, computed from the same records the team works in
 | Last plain-language pass on remaining technical terms | Done |
 | Friendly error pages everywhere, clear message for missing configuration | Done |
 | Automated checks on every change (GitHub Actions) | Done |
-| Public deploy on Vercel and Neon, live link | Next |
+| Public deploy on Vercel and Neon, live link | Done |
+| Team overview first (Team and My work tabs), with the review pipeline | Done |
+| Per-product test cases for the pre-check, visible to compliance in the Rule library | Done |
+| Full lifecycle on each submission, in the space of the old progress strip | Done |
+| Every workflow tested end to end against every table | Done |
 
 ## After this version
 

@@ -124,7 +124,7 @@ went.
 | `body` | text | The copy exactly as submitted, up to 8,000 characters |
 | `findings` | jsonb | The pre-check's findings for this copy: rule, severity, citation, message, suggested fix and where in the text it matched |
 | `risk_score`, `risk_level` | integer, enum | |
-| `engine_version` | text | Which version of the rules produced the findings, e.g. `2026.10.1` |
+| `engine_version` | text | Which version of the rules produced the findings, e.g. `2026.10.2` |
 | `note` | text, nullable | The submitter's note on what changed |
 | `submitted_by_id`, `submitted_at` | text → users, timestamptz | |
 | `sla_due_at` | timestamptz | This round's review deadline |

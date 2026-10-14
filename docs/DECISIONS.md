@@ -187,7 +187,7 @@ third party sees who uses it. Icons are Lucide.
 **Why:** A compliance tool has to explain itself. Each rule is a short,
 readable function with a legal citation, a message and a suggested fix. The same
 copy always gets the same result, every result records which version of the
-rules produced it (currently `2026.10.1`), and every rule has tests. No
+rules produced it (currently `2026.10.2`), and every rule has tests. No
 marketing copy leaves the system.
 
 **Instead of:**
@@ -209,12 +209,19 @@ marketing copy leaves the system.
 
 ### Vitest and Playwright
 
-**Why:** Vitest runs the unit tests (267 of them, mostly on the business rules
-in `src/domain/`) in about a second. Playwright signs in as each role and checks
-that every page fits at five screen sizes, and regenerates the README
-screenshots. GitHub Actions runs lint, type checks, unit tests and a production
-build on every push, then the five-size layout check against a fresh database
+**Why:** Vitest runs the unit tests (335 of them, mostly on the business rules
+in `src/domain/`, including the 42 per-product pre-check cases) in about a
+second. Playwright does two jobs. It drives every workflow through the real
+screens as different people and checks the rows in all six tables
+(`e2e/workflows.spec.ts`), and it signs in as each role and checks that every
+page fits at five screen sizes. It also regenerates the README screenshots.
+GitHub Actions runs lint, type checks, unit tests and a production build on
+every push, then the layout and workflow checks against a fresh database
 (`.github/workflows/ci.yml`).
+
+The workflow tests write data, so they only run when both the app and the
+database are on the local machine, and they reset the database before and
+after. They can't touch the live demo.
 
 ### Vercel, with configuration in Vercel's environment variables
 
@@ -334,8 +341,10 @@ Internal terms are replaced with the team's own words:
 | Audit export (CSV) | Download for Excel |
 | System actor | Review Hub (automatic) |
 | Separation of duties | A second reviewer has to decide this |
-| Rules engine version | Rule set 2026.10.1 |
-| Rules evaluated | 13 checks |
+| Rules engine version | Rule set 2026.10.2 |
+| Rules evaluated | 13 checks (personal loan and card), 15 (mortgage) |
+| Dashboard | Team overview |
+| Pipeline stage | Waiting for a reviewer, Under review, Back with marketing |
 | 404 | Nothing filed under that reference |
 
 ### What reviewers see first
@@ -350,6 +359,56 @@ with the rule, the regulation behind it and a suggested fix.
 The same rules run in the browser as the submitter types, with the score and
 findings updating live. The server re-runs the check on submit, so the browser
 version is a preview, never the record.
+
+### The team comes first
+
+Compliance staff land on the **Team overview**, not a personal inbox. The
+bottleneck is the team's, so the first screen shows how much work sits at each
+stage, which stage is slowest (with one line on what to do about it), who has
+what and how close it is to its deadline, what's nearest to overdue, and the
+findings marketing trips over most. Each person's own work is the **My work**
+tab: what's assigned to them, what nobody has picked up, what's back with
+marketing, and their recent decisions.
+
+**Instead of:** a personal dashboard first, with a separate admin page for the
+lead. Reviewers would never see the team's queue building up, and the lead
+would have one more page to remember.
+
+### The whole lifecycle, without extra pages
+
+A submission's life (submitted and pre-checked, each review round, back with
+marketing, the decision, the launch date) appears where people already look,
+in the space they already use. The overview's pipeline row counts work at each
+stage and links into the queue filtered to it. Each submission's page has a
+strip showing its own path, round by round, ending at its launch date, with a
+warning there when the review deadline threatens it
+(`src/domain/lifecycle.ts`).
+
+**Instead of:** a separate pipeline or Kanban page. It would repeat the queue,
+and work that needs a separate page to be seen tends not to be seen.
+
+### Proving the rules per product
+
+Every product has test cases with known right answers (42 in all:
+15 personal loan, 13 credit card, 14 mortgage prequalification,
+`src/domain/precheck/scenarios.ts`). Each says exactly which checks a piece of
+copy should set off, and some must pass clean. Tests fail if a case gets a
+different result, if any check isn't set off by a case for every product it
+applies to, or if the result changes with the channel.
+
+Writing them found four real gaps, now fixed in **Rule set 2026.10.2**:
+“3 percent” spelled out wasn't read as a rate; “for your first 3 months” wasn't
+read as a promotional period; copy pasted from Word with non-breaking hyphens
+(“pre‑approved”) slipped past; and “prequalified means approved” wasn't caught
+on credit cards (it's now cited under UDAAP for cards). Old reviews keep the
+version that produced them, so their findings don't change.
+
+The compliance team can see each product's cases in the Rule library, with
+whether each behaves as expected, and open any case in New submission to edit
+it and watch the checks respond. Restrictions: the cases are compliance-only,
+enforced on the server (a marketer opening the same link gets a blank form);
+results are worked out on the server each time the page opens; and nothing is
+saved until Submit is pressed.
 
 ---
 
