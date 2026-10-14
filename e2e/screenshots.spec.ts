@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { signInOn } from "./people";
 
 /**
  * Captures the screenshots used in the README (docs/screenshots/). Run after
@@ -11,12 +12,6 @@ import { expect, test, type Page } from "@playwright/test";
  */
 
 const OUT = "docs/screenshots";
-
-async function signInAs(page: Page, firstName: "Dana" | "Priya") {
-  await page.goto("/login");
-  await page.getByRole("button", { name: new RegExp(`Continue as ${firstName}`) }).click();
-  await page.waitForURL((url) => !url.pathname.startsWith("/login"));
-}
 
 async function shoot(page: Page, name: string) {
   await page.waitForLoadState("networkidle");
@@ -33,7 +28,7 @@ test("desktop screenshots", async ({ page }, testInfo) => {
   await page.goto("/login");
   await shoot(page, "login");
 
-  await signInAs(page, "Dana");
+  await signInOn(page, "Dana");
   await page.goto("/queue");
   await shoot(page, "queue");
 
@@ -73,7 +68,7 @@ test("desktop screenshots", async ({ page }, testInfo) => {
   await expect(page.getByRole("heading", { name: /^\d+ events?$/ })).toBeVisible();
   await shoot(page, "audit-item");
 
-  await signInAs(page, "Priya");
+  await signInOn(page, "Priya");
   await page.goto("/submissions/new");
   await page.getByRole("button", { name: "Risky loan email" }).click();
   await expect(page.getByText(/Live pre-check/)).toBeVisible();
@@ -82,7 +77,7 @@ test("desktop screenshots", async ({ page }, testInfo) => {
 
 test("phone screenshots", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "phone");
-  await signInAs(page, "Dana");
+  await signInOn(page, "Dana");
   await page.goto("/queue");
   await shoot(page, "phone-queue");
 

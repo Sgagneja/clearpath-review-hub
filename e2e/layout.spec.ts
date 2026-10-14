@@ -1,5 +1,6 @@
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 import { watchErrors, type ErrorWatch } from "./errors";
+import { signInOn } from "./people";
 
 /**
  * Every page has to fit the screen it's opened on: a phone, a tablet, a
@@ -22,12 +23,6 @@ test.beforeEach(({ page }, testInfo) => {
   errors.allowMissing(NOT_FOUND);
 });
 test.afterEach(() => errors.expectNone());
-
-async function signInAs(page: Page, firstName: "Dana" | "Priya") {
-  await page.goto("/login");
-  await page.getByRole("button", { name: new RegExp(`Continue as ${firstName}`) }).click();
-  await page.waitForURL((url) => !url.pathname.startsWith("/login"));
-}
 
 async function expectToFit(page: Page, name: string, testInfo: TestInfo) {
   await page.waitForLoadState("networkidle");
@@ -89,7 +84,7 @@ async function firstHref(page: Page, path: string, pattern: RegExp) {
 
 test("compliance lead: every page fits", async ({ page, isMobile }, testInfo) => {
   await visit(page, testInfo, "login", "/login");
-  await signInAs(page, "Dana");
+  await signInOn(page, "Dana");
 
   await visit(page, testInfo, "dashboard", "/dashboard");
   await visit(page, testInfo, "dashboard-mine", "/dashboard/mine");
@@ -147,7 +142,7 @@ test("compliance lead: every page fits", async ({ page, isMobile }, testInfo) =>
 });
 
 test("submitter: every page fits", async ({ page }, testInfo) => {
-  await signInAs(page, "Priya");
+  await signInOn(page, "Priya");
 
   await visit(page, testInfo, "submitter-queue", "/queue");
   await visit(page, testInfo, "submitter-new-submission", "/submissions/new");

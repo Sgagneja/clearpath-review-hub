@@ -3,13 +3,35 @@ import { watchErrors, type ErrorWatch } from "./errors";
 
 export type FirstName = "Priya" | "Marcus" | "Alana" | "Dana";
 
+const SLOW_DOWN = /going faster than a person usually does\. Try again in (\d+)s/;
+
+/**
+ * Signs in from the demo's sign-in page. Sign-ins are limited per address (10 at once,
+ * then one every 6 seconds), which a test run against a fast build can reach, so this
+ * waits when asked to and tries again, as a person would.
+ */
+export async function signInOn(page: Page, firstName: FirstName) {
+  const slowDown = page.getByText(SLOW_DOWN);
+  const signedIn = () => new URL(page.url()).pathname !== "/login";
+  for (let attempt = 1; ; attempt++) {
+    await page.goto("/login");
+    await page.getByRole("button", { name: new RegExp(`Continue as ${firstName}`) }).click();
+    await expect
+      .poll(async () => signedIn() || (await slowDown.count().catch(() => 0)) > 0, { timeout: 30_000 })
+      .toBe(true);
+    if (signedIn()) break;
+    if (attempt === 20) throw new Error(`${firstName} was still asked to slow down after ${attempt} sign-ins`);
+    const seconds = Number((await slowDown.textContent())?.match(SLOW_DOWN)?.[1] ?? 6);
+    await page.waitForTimeout(seconds * 1000);
+  }
+  await page.waitForURL((url) => !url.pathname.startsWith("/login"));
+}
+
 /** A separate browser session per person, as if each were on their own laptop, watched for errors. */
 export async function openAs(browser: Browser, firstName: FirstName): Promise<{ page: Page; errors: ErrorWatch }> {
   const page = await (await browser.newContext()).newPage();
   const errors = watchErrors(page, firstName);
-  await page.goto("/login");
-  await page.getByRole("button", { name: new RegExp(`Continue as ${firstName}`) }).click();
-  await page.waitForURL((url) => !url.pathname.startsWith("/login"));
+  await signInOn(page, firstName);
   return { page, errors };
 }
 

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans, Newsreader } from "next/font/google";
+import { connection } from "next/server";
 import "./globals.css";
 
 const sans = IBM_Plex_Sans({
@@ -36,7 +37,10 @@ export const viewport: Viewport = {
   themeColor: "#08152a",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  // A page built ahead of time has no CSP nonce, so the browser blocks its scripts.
+  // Waiting for the request renders every page, "not found" included, per request.
+  await connection();
   return (
     <html lang="en" className={`${sans.variable} ${mono.variable} ${serif.variable} h-full antialiased`}>
       <body className="min-h-full">{children}</body>
