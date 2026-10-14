@@ -81,11 +81,18 @@ test("compliance lead: every page fits", async ({ page, isMobile }, testInfo) =>
   await signInAs(page, "Dana");
 
   await visit(page, testInfo, "dashboard", "/dashboard");
+  await visit(page, testInfo, "dashboard-mine", "/dashboard/mine");
   await visit(page, testInfo, "queue", "/queue");
   await visit(page, testInfo, "queue-all", "/queue?status=all");
   await visit(page, testInfo, "new-submission", "/submissions/new");
+  await visit(page, testInfo, "new-submission-test-case", "/submissions/new?example=mp-everything-wrong");
   await visit(page, testInfo, "audit", "/audit");
   await visit(page, testInfo, "rules", "/rules");
+  await visit(page, testInfo, "rules-mortgage", "/rules?product=mortgage_prequal");
+  await test.step("rules-test-case-open", async () => {
+    await page.locator("summary").filter({ hasText: "Everything wrong" }).first().click();
+    await expectToFit(page, "rules-test-case-open", testInfo);
+  });
   await visit(page, testInfo, "import", "/import");
   await visit(page, testInfo, "not-found", "/this-page-does-not-exist");
 
@@ -131,6 +138,10 @@ test("submitter: every page fits", async ({ page }, testInfo) => {
   await visit(page, testInfo, "submitter-queue", "/queue");
   await visit(page, testInfo, "submitter-new-submission", "/submissions/new");
   await visit(page, testInfo, "submitter-no-access", "/audit");
+  await visit(page, testInfo, "submitter-rules-card", "/rules?product=credit_card");
+  expect.soft(await page.getByText("test cases").count(), "test cases are for compliance only").toBe(0);
+  await visit(page, testInfo, "submitter-test-case-link", "/submissions/new?example=cc-guaranteed");
+  expect.soft(await page.getByText("Test case:").count(), "a test-case link opens a blank form for marketing").toBe(0);
 
   const returned = await firstHref(page, "/queue?status=changes_requested", /^\/submissions\/MKT-\d+$/);
   if (returned) {

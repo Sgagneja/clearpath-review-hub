@@ -153,35 +153,79 @@ export function bottleneck(durations: StageDuration[]): StageDuration | null {
   }, null);
 }
 
-export interface ReviewerLoad {
-  reviewerId: string;
+/** What is on someone's desk right now (or on nobody's, for unassigned work). */
+export interface OpenLoad {
+  /** Awaiting review or in review. */
   open: number;
+  /** Assigned but not started yet. */
+  toStart: number;
+  inReview: number;
+  overdue: number;
+  /** Soonest deadline among the open reviews. */
+  nextDueAt: Date | null;
+}
+
+/** How someone's decisions went. */
+export interface DecisionRecord {
   decided: number;
+  /** Decided before the round's deadline. */
+  onTime: Rate;
+  /** Typical time from starting a review to deciding it. */
   medianReviewHours: number | null;
 }
 
+export interface ReviewerLoad extends OpenLoad, DecisionRecord {
+  reviewerId: string;
+}
+
+/** The deadline that counts for an open submission is its latest round's. */
+function openLoad(subs: MetricSubmission[], now: Date): OpenLoad {
+  const active = subs.filter((s) => s.status === "submitted" || s.status === "in_review");
+  const deadlines = active.flatMap((s) => {
+    const current = s.rounds[s.rounds.length - 1];
+    return current ? [current.slaDueAt.getTime()] : [];
+  });
+  return {
+    open: active.length,
+    toStart: active.filter((s) => s.status === "submitted").length,
+    inReview: active.filter((s) => s.status === "in_review").length,
+    overdue: deadlines.filter((due) => due < now.getTime()).length,
+    nextDueAt: deadlines.length ? new Date(Math.min(...deadlines)) : null,
+  };
+}
+
+export function decisionRecord(
+  rounds: Pick<MetricRound, "slaDueAt" | "reviewStartedAt" | "decidedAt">[],
+): DecisionRecord {
+  const decided = rounds.filter((r) => r.decidedAt !== null);
+  const onTime = decided.filter((r) => r.decidedAt!.getTime() <= r.slaDueAt.getTime()).length;
+  const reviewHours = decided.flatMap((r) =>
+    r.reviewStartedAt ? [hoursBetween(r.reviewStartedAt, r.decidedAt!)] : [],
+  );
+  return {
+    decided: decided.length,
+    onTime: rate(onTime, decided.length),
+    medianReviewHours: median(reviewHours),
+  };
+}
+
+/** One row per reviewer: what they have open now and how their decisions have gone. */
 export function reviewerWorkload(
   subs: MetricSubmission[],
   reviewerIds: string[],
+  now: Date,
 ): ReviewerLoad[] {
-  return reviewerIds.map((reviewerId) => {
-    const open = subs.filter(
-      (s) =>
-        s.assigneeId === reviewerId && (s.status === "submitted" || s.status === "in_review"),
-    ).length;
-    const decidedRounds = subs
-      .flatMap((s) => s.rounds)
-      .filter((r) => r.decidedById === reviewerId && r.decidedAt);
-    const reviewHours = decidedRounds
-      .filter((r) => r.reviewStartedAt)
-      .map((r) => hoursBetween(r.reviewStartedAt!, r.decidedAt!));
-    return {
-      reviewerId,
-      open,
-      decided: decidedRounds.length,
-      medianReviewHours: median(reviewHours),
-    };
-  });
+  const rounds = subs.flatMap((s) => s.rounds);
+  return reviewerIds.map((reviewerId) => ({
+    reviewerId,
+    ...openLoad(subs.filter((s) => s.assigneeId === reviewerId), now),
+    ...decisionRecord(rounds.filter((r) => r.decidedById === reviewerId)),
+  }));
+}
+
+/** Open work nobody has yet. Every hour here is pure waiting. */
+export function unassignedLoad(subs: MetricSubmission[], now: Date): OpenLoad {
+  return openLoad(subs.filter((s) => !s.assigneeId), now);
 }
 
 export interface WeekBucket {

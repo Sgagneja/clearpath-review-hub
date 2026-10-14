@@ -13,9 +13,10 @@ import { PersonaSwitcher } from "./persona-switcher";
  */
 function navItems(user: CurrentUser, queueCount: number): NavItem[] {
   const compliance = can(user, "queue.view_all");
+  // Compliance starts from the team view; the count is their own share of it, under My work.
   const items: (NavItem | false)[] = [
-    can(user, "dashboard.view") && { key: "dashboard", href: "/dashboard", label: "Dashboard" },
-    { key: "queue", href: "/queue", label: compliance ? "Review queue" : "My submissions", badge: queueCount },
+    can(user, "dashboard.view") && { key: "dashboard", href: "/dashboard", label: "Team overview", badge: queueCount },
+    { key: "queue", href: "/queue", label: compliance ? "Review queue" : "My submissions", badge: compliance ? undefined : queueCount },
     { key: "new", href: "/submissions/new", label: "New submission" },
     can(user, "import.run") && { key: "import", href: "/import", label: "Import" },
     can(user, "audit.view") && { key: "audit", href: "/audit", label: "Audit trail" },

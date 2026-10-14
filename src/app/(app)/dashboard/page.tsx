@@ -1,64 +1,289 @@
-import { ArrowRight, CalendarClock, Hourglass } from "lucide-react";
+import { Hourglass } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AccessDenied } from "@/components/access-denied";
 import { SeverityGlyph } from "@/components/severity";
-import { SlaIndicator } from "@/components/sla";
-import { buttonClasses } from "@/components/ui/button";
-import { Card, CardBody, CardHeader, CardNote } from "@/components/ui/card";
-import { PageHeader } from "@/components/ui/page-header";
-import { STAGE_LABELS } from "@/domain/metrics";
-import { authorize } from "@/domain/permissions";
-import { ROLE_LABELS, SEVERITIES } from "@/domain/types";
+import { Card, CardHeader, CardNote, CardBody } from "@/components/ui/card";
+import type { OpenLoad, StageKey } from "@/domain/metrics";
+import { authorize, can } from "@/domain/permissions";
 import { niceAxis } from "@/lib/axis";
 import { cn } from "@/lib/cn";
-import { formatHours, formatPercent, formatShortDate, pluralize } from "@/lib/format";
+import { formatHours, formatPercent, formatRelative, formatShortDate, pluralize } from "@/lib/format";
 import { homePathFor, requireUser } from "@/server/auth";
 import { getDashboard, type Dashboard } from "@/server/queries/dashboard";
+import { countMyQueue } from "@/server/queries/queue";
+import { OverviewHeader } from "./overview-header";
+import { WorkList } from "./work-list";
 
-export const metadata: Metadata = { title: "Dashboard" };
+export const metadata: Metadata = { title: "Team overview" };
 
-export default async function DashboardPage() {
+const linkClasses = "text-[0.8125rem] font-medium text-brand-700 hover:underline";
+
+/**
+ * Where everyone in compliance starts the day: work at each stage of review,
+ * who has it, what's about to slip, and how fast work moves. Each person's own
+ * list is one tab over, on /dashboard/mine.
+ */
+export default async function TeamOverviewPage() {
   const user = await requireUser();
   const access = authorize(user, "dashboard.view");
   if (!access.allowed) return <AccessDenied reason={access.reason} home={homePathFor(user.role)} />;
 
   const now = new Date();
-  const data = await getDashboard(user, now);
+  const [data, myCount] = await Promise.all([getDashboard(user, now), countMyQueue(user)]);
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        context={`${formatShortDate(data.weeks[0].weekStart)} – ${formatShortDate(now)}`}
-        title="Review throughput"
-        description="How fast copy moves from submission to decision, where it waits, and which guidelines marketing trips over most."
-        actions={
-          <Link href="/queue" className={buttonClasses({ variant: "secondary" })}>
-            Open the queue
-            <ArrowRight aria-hidden="true" />
-          </Link>
-        }
+      <OverviewHeader
+        active="team"
+        context={`${user.team} · ${formatShortDate(data.weeks[0].weekStart)} – ${formatShortDate(now)}`}
+        myCount={myCount}
       />
 
-      <Kpis data={data} />
+      <Pipeline data={data} />
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
-        <ThroughputChart weeks={data.weeks} />
-        <StageChart data={data} />
-      </div>
+      <WhoIsOnWhat data={data} now={now} userId={user.id} canAssign={can(user, "submission.assign")} />
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <Attention data={data} now={now} />
-        <Workload data={data} />
+        <TopRules data={data} />
       </div>
 
-      <TopRules data={data} />
+      <Performance data={data} />
     </div>
   );
 }
 
-function Kpis({ data }: { data: Dashboard }) {
-  const { totals } = data;
+const BOTTLENECK_ADVICE: Record<StageKey, string> = {
+  awaiting_pickup: "Most of the wait is before anyone opens the asset. Assigning on arrival would cut turnaround more than faster reviews.",
+  in_review: "Reviews themselves take the longest. Check who's on what before tightening deadlines.",
+  with_submitter: "Revisions are the slow part. The most common findings are where marketing needs better templates.",
+};
+
+/**
+ * The review lifecycle as one row: how much is at each stage now, how long work
+ * usually sits there, and which stage is the bottleneck. Each stage opens the
+ * queue filtered to it.
+ */
+function Pipeline({ data }: { data: Dashboard }) {
+  const { pipeline } = data;
+  const hours = (stage: StageKey) => data.stages.find((s) => s.stage === stage)?.meanHours ?? null;
+  const thisWeek = data.weeks[data.weeks.length - 1];
+  const decided = thisWeek.approved + thisWeek.changesRequested + thisWeek.rejected;
+
+  const stages: { key: string; stage?: StageKey; label: string; href: string; count: number; detail: React.ReactNode }[] = [
+    {
+      key: "waiting",
+      stage: "awaiting_pickup",
+      label: "Waiting for a reviewer",
+      href: "/queue?status=submitted",
+      count: pipeline.waiting.count,
+      detail: (
+        <>
+          <Overdue count={pipeline.waiting.overdue} />
+          {pipeline.waiting.unassigned ? ` · ${pipeline.waiting.unassigned} not assigned` : null}
+        </>
+      ),
+    },
+    {
+      key: "review",
+      stage: "in_review",
+      label: "Under review",
+      href: "/queue?status=in_review",
+      count: pipeline.inReview.count,
+      detail: <Overdue count={pipeline.inReview.overdue} />,
+    },
+    {
+      key: "marketing",
+      stage: "with_submitter",
+      label: "Back with marketing",
+      href: "/queue?status=changes_requested",
+      count: pipeline.withMarketing.count,
+      detail: "Deadline paused for changes",
+    },
+    {
+      key: "decided",
+      label: "Decided this week",
+      href: "/queue?status=all&sort=updated&dir=desc",
+      count: decided,
+      detail: `${thisWeek.approved} approved · ${thisWeek.changesRequested} sent back · ${thisWeek.rejected} rejected`,
+    },
+  ];
+
+  return (
+    <section aria-labelledby="pipeline-title">
+      <h2 id="pipeline-title" className="sr-only">
+        Review stages
+      </h2>
+      <ol className="grid gap-px overflow-hidden rounded-xl border border-line bg-line shadow-[var(--shadow-card)] sm:grid-cols-2 xl:grid-cols-4">
+        {stages.map((s, i) => {
+          const isBottleneck = s.stage !== undefined && data.bottleneck?.stage === s.stage;
+          return (
+            <li key={s.key} className="relative bg-white px-5 py-4 hover:bg-paper/50">
+              <p className="eyebrow flex items-center justify-between gap-2 text-ink-500">
+                <span>
+                  <span className="tabular-nums text-ink-400">{i + 1}</span> · {s.label}
+                </span>
+                {isBottleneck ? (
+                  <span className="inline-flex items-center gap-1 font-semibold text-medium-700">
+                    <Hourglass className="size-3" aria-hidden="true" /> Slowest
+                  </span>
+                ) : null}
+              </p>
+              <Link href={s.href} className="figure mt-1.5 block after:absolute after:inset-0">
+                {s.count}
+                <span className="sr-only"> {s.label.toLowerCase()}</span>
+              </Link>
+              <p className="mt-1 text-xs text-ink-600">{s.detail}</p>
+              {s.stage ? (
+                <p className="mt-2.5 border-t border-line pt-2 text-xs text-ink-500">
+                  Average <span className="font-mono tabular-nums text-ink-800">{formatHours(hours(s.stage))}</span> here
+                </p>
+              ) : null}
+            </li>
+          );
+        })}
+      </ol>
+      {data.bottleneck ? (
+        <p className="mt-3 flex items-start gap-2 text-[0.8125rem] leading-relaxed text-ink-700">
+          <Hourglass className="mt-0.5 size-3.5 shrink-0 text-medium-600" aria-hidden="true" />
+          {BOTTLENECK_ADVICE[data.bottleneck.stage]}
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
+function Overdue({ count }: { count: number }) {
+  return count ? <span className="font-semibold text-high-700">{count} overdue</span> : <>None overdue</>;
+}
+
+function WhoIsOnWhat({ data, now, userId, canAssign }: { data: Dashboard; now: Date; userId: string; canAssign: boolean }) {
+  const loose = data.unassigned;
+  const maxOpen = Math.max(1, loose.open, ...data.workload.map((w) => w.open));
+  const head = "eyebrow whitespace-nowrap px-3 py-2 font-medium text-ink-500";
+
+  return (
+    <Card aria-labelledby="team-title">
+      <CardHeader
+        titleId="team-title"
+        title="Who's on what"
+        action={
+          <Link href="/queue" className={linkClasses}>
+            Full queue
+          </Link>
+        }
+      />
+      {/* The right padding sits on the scroll box so whichever column is last keeps its gutter. */}
+      <div className="relative overflow-x-auto pr-1 sm:pr-2">
+        <table className="w-full text-left text-sm">
+          <caption className="sr-only">Open reviews and decisions for each person on the compliance team</caption>
+          <thead>
+            <tr className="border-b border-line">
+              <th scope="col" className={cn(head, "pl-4 sm:pl-5")}>Person</th>
+              <th scope="col" className={head}>Open now</th>
+              <th scope="col" className={cn(head, "text-right")}>Overdue</th>
+              <th scope="col" className={cn(head, "hidden text-right sm:table-cell")}>Next deadline</th>
+              <th scope="col" className={cn(head, "hidden text-right md:table-cell")}>Decided</th>
+              <th scope="col" className={cn(head, "hidden text-right md:table-cell")}>On time</th>
+              <th scope="col" className={cn(head, "hidden text-right xl:table-cell")}>Review time</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-line">
+            {loose.open > 0 ? (
+              <tr className="bg-paper/60">
+                <th scope="row" className="py-2.5 pl-4 pr-3 font-normal sm:pl-5">
+                  <Link href="/queue?status=submitted&assignee=unassigned" className="font-medium italic text-ink-800 hover:text-brand-700">
+                    Not assigned yet
+                  </Link>
+                  <span className="block text-[0.6875rem] text-ink-500">
+                    {canAssign ? "Yours to hand out" : "Anyone on the team can start these"}
+                  </span>
+                </th>
+                <LoadCells load={loose} max={maxOpen} now={now} />
+                <td className="hidden md:table-cell" />
+                <td className="hidden md:table-cell" />
+                <td className="hidden xl:table-cell" />
+              </tr>
+            ) : null}
+            {data.workload.map((w) => (
+              <tr key={w.reviewerId}>
+                <th scope="row" className="py-2.5 pl-4 pr-3 font-normal sm:pl-5">
+                  <Link href={`/queue?assignee=${w.reviewerId}`} className="font-medium text-ink-900 hover:text-brand-700">
+                    {w.reviewer.name}
+                  </Link>
+                  {w.reviewerId === userId ? <span className="ml-1.5 text-xs text-ink-400">you</span> : null}
+                  <span className="block truncate text-[0.6875rem] text-ink-500">{w.reviewer.title}</span>
+                </th>
+                <LoadCells load={w} max={maxOpen} now={now} />
+                <td className="hidden px-3 py-2.5 text-right font-mono tabular-nums text-ink-700 md:table-cell">{w.decided}</td>
+                <td className="hidden px-3 py-2.5 text-right font-mono tabular-nums text-ink-700 md:table-cell">{formatPercent(w.onTime.rate)}</td>
+                <td className="hidden px-3 py-2.5 text-right font-mono tabular-nums text-ink-700 xl:table-cell">{formatHours(w.medianReviewHours)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <CardNote>
+        Open now is what each person has on their desk; the darker part is already under review. Decided, on time and review time
+        cover every decision they&apos;ve made.
+      </CardNote>
+    </Card>
+  );
+}
+
+/** Open now, overdue and next deadline: the same three cells for a person or for the unassigned pile. */
+function LoadCells({ load, max, now }: { load: OpenLoad; max: number; now: Date }) {
+  const late = load.nextDueAt !== null && load.nextDueAt.getTime() < now.getTime();
+  return (
+    <>
+      <td className="px-3 py-2.5">
+        <span className="flex items-center gap-2.5">
+          <span className="w-4 text-right font-mono tabular-nums text-ink-900">{load.open}</span>
+          <span className="sr-only">
+            : {load.inReview} under review, {load.toStart} not started
+          </span>
+          <span className="hidden h-1.5 w-24 overflow-hidden rounded-full bg-ink-50 sm:flex" aria-hidden="true">
+            <span className="h-full bg-brand-600" style={{ width: `${(load.inReview / max) * 100}%` }} />
+            <span className="h-full bg-brand-200" style={{ width: `${(load.toStart / max) * 100}%` }} />
+          </span>
+        </span>
+      </td>
+      <td className={cn("px-3 py-2.5 text-right font-mono tabular-nums", load.overdue ? "font-semibold text-high-700" : "text-ink-300")}>
+        {load.overdue}
+      </td>
+      <td className={cn("hidden whitespace-nowrap px-3 py-2.5 text-right font-mono text-[0.8125rem] sm:table-cell", late ? "text-high-700" : "text-ink-700")}>
+        {load.nextDueAt ? formatRelative(load.nextDueAt, now) : <span className="text-ink-300">—</span>}
+      </td>
+    </>
+  );
+}
+
+function Attention({ data, now }: { data: Dashboard; now: Date }) {
+  return (
+    <Card aria-labelledby="attention-title">
+      <CardHeader
+        titleId="attention-title"
+        title="Closest to the deadline"
+        action={
+          <Link href="/queue" className={linkClasses}>
+            Full queue
+          </Link>
+        }
+      />
+      <WorkList
+        items={data.attention}
+        now={now}
+        empty="Nothing open. Enjoy it."
+        aside={(item) =>
+          item.assignee ? <span className="text-ink-600">{item.assignee.name.split(" ")[0]}</span> : <span className="italic text-ink-400">Not assigned</span>
+        }
+      />
+    </Card>
+  );
+}
+
+function Performance({ data }: { data: Dashboard }) {
   const tiles = [
     {
       label: "Typical turnaround",
@@ -80,53 +305,30 @@ function Kpis({ data }: { data: Dashboard }) {
   ];
 
   // One sheet of figures. The 1px gaps over a line-coloured background draw the
-  // rules between cells, whether they sit four across or two by two.
+  // rules between cells, whether they sit side by side or stacked beside the chart.
   return (
-    <ul className="grid gap-px overflow-hidden rounded-xl border border-line bg-line shadow-[var(--shadow-card)] sm:grid-cols-2 xl:grid-cols-4">
-      {tiles.map((t) => (
-        <li key={t.label} className="bg-white px-5 py-4">
-          <p className="eyebrow text-ink-500">{t.label}</p>
-          <p className="figure mt-1.5">{t.value}</p>
-          {t.bar !== undefined && t.bar !== null ? (
-            <div className="mt-3 h-1 overflow-hidden rounded-full bg-ink-100" aria-hidden="true">
-              <div className="h-full rounded-full bg-brand-500" style={{ width: `${Math.round(t.bar * 100)}%` }} />
-            </div>
-          ) : null}
-          <p className="mt-2 text-xs text-ink-500">{t.note}</p>
-        </li>
-      ))}
-      <li className="bg-white px-5 py-4">
-        <p className="eyebrow text-ink-500">Open with compliance</p>
-        <p className="mt-1.5 flex items-baseline gap-3">
-          <span className="figure">{totals.active}</span>
-          <span className="text-sm">
-            <span className="sr-only">open, </span>
-            {totals.overdue ? <span className="font-semibold text-high-700">{totals.overdue} overdue</span> : <span className="text-ink-500">none overdue</span>}
-          </span>
-        </p>
-        <div className="mt-3 flex h-1 overflow-hidden rounded-full bg-ink-100" aria-label={`${totals.activeByRisk.high} high, ${totals.activeByRisk.medium} medium, ${totals.activeByRisk.low} low risk`} role="img">
-          {SEVERITIES.map((s) => (
-            <span
-              key={s}
-              className={cn(s === "high" ? "bg-high-500" : s === "medium" ? "bg-medium-500" : "bg-low-500")}
-              style={{ width: totals.active ? `${(totals.activeByRisk[s] / totals.active) * 100}%` : 0 }}
-            />
+    <section aria-labelledby="performance-title">
+      <h2 id="performance-title" className="mb-3 text-[0.9375rem] font-semibold text-ink-950">
+        How the team is doing
+      </h2>
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+        <ul className="grid gap-px overflow-hidden rounded-xl border border-line bg-line shadow-[var(--shadow-card)] sm:grid-cols-3 xl:grid-cols-1">
+          {tiles.map((t) => (
+            <li key={t.label} className="bg-white px-5 py-4">
+              <p className="eyebrow text-ink-500">{t.label}</p>
+              <p className="figure mt-1.5">{t.value}</p>
+              {t.bar !== undefined && t.bar !== null ? (
+                <div className="mt-3 h-1 overflow-hidden rounded-full bg-ink-100" aria-hidden="true">
+                  <div className="h-full rounded-full bg-brand-500" style={{ width: `${Math.round(t.bar * 100)}%` }} />
+                </div>
+              ) : null}
+              <p className="mt-2 text-xs text-ink-500">{t.note}</p>
+            </li>
           ))}
-        </div>
-        <p className="mt-2 flex flex-wrap gap-x-3 text-xs text-ink-500">
-          {SEVERITIES.map((s) => (
-            <span key={s} className="inline-flex items-center gap-1">
-              <SeverityGlyph severity={s} className="size-2" />
-              {totals.activeByRisk[s]} {s}
-            </span>
-          ))}
-          <span className="inline-flex items-center gap-1">
-            <CalendarClock className="size-3" aria-hidden="true" />
-            {totals.launchAtRisk} launch at risk
-          </span>
-        </p>
-      </li>
-    </ul>
+        </ul>
+        <ThroughputChart weeks={data.weeks} />
+      </div>
+    </section>
   );
 }
 
@@ -221,149 +423,6 @@ function ThroughputChart({ weeks }: { weeks: Dashboard["weeks"] }) {
   );
 }
 
-function StageChart({ data }: { data: Dashboard }) {
-  const max = Math.max(1, ...data.stages.map((s) => s.meanHours ?? 0));
-  return (
-    <Card aria-labelledby="stages-title" className="flex flex-col">
-      <CardHeader titleId="stages-title" title="Where work waits" />
-      <CardBody className="flex-1 space-y-5">
-        {data.stages.map((stage) => {
-          const isBottleneck = data.bottleneck?.stage === stage.stage;
-          return (
-            <div key={stage.stage}>
-              <div className="flex items-baseline justify-between gap-3">
-                <p className="flex items-center gap-2 text-[0.8125rem] font-medium text-ink-800">
-                  {STAGE_LABELS[stage.stage]}
-                  {isBottleneck ? (
-                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-medium-700">
-                      <Hourglass className="size-3" aria-hidden="true" /> Slowest stage
-                    </span>
-                  ) : null}
-                </p>
-                <p className="font-mono text-[0.8125rem] tabular-nums text-ink-900">{formatHours(stage.meanHours)}</p>
-              </div>
-              <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-ink-50" aria-hidden="true">
-                <div
-                  className={cn("h-full rounded-full", isBottleneck ? "bg-medium-500" : "bg-ink-300")}
-                  style={{ width: `${((stage.meanHours ?? 0) / max) * 100}%` }}
-                />
-              </div>
-              <p className="mt-1 text-[0.6875rem] text-ink-400">{pluralize(stage.samples, "round")}</p>
-            </div>
-          );
-        })}
-        {data.bottleneck ? (
-          <p className="border-t border-line pt-4 text-[0.8125rem] leading-relaxed text-ink-700">
-            {data.bottleneck.stage === "awaiting_pickup"
-              ? "Most of the wait is before anyone opens the asset. Assigning on arrival would cut turnaround more than faster reviews."
-              : data.bottleneck.stage === "in_review"
-                ? "Reviews themselves take the longest. Check reviewer workload below before tightening deadlines."
-                : "Revisions are the slow part. The most common findings below are where marketing needs better templates."}
-          </p>
-        ) : null}
-      </CardBody>
-      <CardNote>Average time per review round, open reviews included.</CardNote>
-    </Card>
-  );
-}
-
-function Attention({ data, now }: { data: Dashboard; now: Date }) {
-  return (
-    <Card aria-labelledby="attention-title">
-      <CardHeader
-        titleId="attention-title"
-        title="Closest to the deadline"
-        action={
-          <Link href="/queue" className="text-[0.8125rem] font-medium text-brand-700 hover:underline">
-            Full queue
-          </Link>
-        }
-      />
-      {data.attention.length === 0 ? (
-        <CardBody>
-          <p className="text-sm text-ink-500">Nothing open. Enjoy it.</p>
-        </CardBody>
-      ) : (
-        <ul className="divide-y divide-line">
-          {data.attention.map((item) => (
-            <li key={item.reference} className="relative flex items-center gap-4 px-5 py-3 hover:bg-paper/60">
-              <SeverityGlyph severity={item.riskLevel} />
-              <div className="min-w-0 flex-1">
-                <Link href={`/submissions/${item.reference}`} className="block truncate text-[0.875rem] font-medium text-ink-900 after:absolute after:inset-0 hover:text-brand-700">
-                  {item.title}
-                </Link>
-                <p className="mt-0.5 flex items-center gap-1.5 font-mono text-[0.6875rem] text-ink-500">
-                  {item.reference}
-                  {item.launchAtRisk ? <span className="font-sans font-semibold text-medium-700">· launch at risk</span> : null}
-                </p>
-              </div>
-              <span className={cn("hidden w-20 truncate text-xs sm:block", item.assignee ? "text-ink-600" : "italic text-ink-400")}>
-                {item.assignee?.name.split(" ")[0] ?? "Unassigned"}
-              </span>
-              <div className="w-36 shrink-0">
-                <SlaIndicator sla={item.sla} now={now} compact />
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-    </Card>
-  );
-}
-
-function Workload({ data }: { data: Dashboard }) {
-  const maxOpen = Math.max(1, ...data.workload.map((w) => w.open));
-  return (
-    <Card aria-labelledby="workload-title">
-      <CardHeader
-        titleId="workload-title"
-        title="Reviewer workload"
-      />
-      <div className="relative overflow-x-auto">
-        <table className="w-full text-left text-sm">
-          <thead>
-            <tr className="border-b border-line">
-              <th scope="col" className="eyebrow py-2 pl-4 pr-3 font-medium text-ink-500 sm:pl-5">
-                Reviewer
-              </th>
-              <th scope="col" className="eyebrow px-3 py-2 font-medium text-ink-500">
-                Open
-              </th>
-              <th scope="col" className="eyebrow hidden px-3 py-2 text-right font-medium text-ink-500 sm:table-cell">
-                Decided
-              </th>
-              <th scope="col" className="eyebrow whitespace-nowrap py-2 pl-3 pr-4 text-right font-medium text-ink-500 sm:pr-5">
-                Review time
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-line">
-            {data.workload.map((w) => (
-              <tr key={w.reviewerId}>
-                <td className="py-2.5 pl-4 pr-3 sm:pl-5">
-                  <span className="block truncate font-medium text-ink-900">{w.reviewer.name}</span>
-                  <span className="block truncate text-[0.6875rem] text-ink-500">{ROLE_LABELS[w.reviewer.role]}</span>
-                </td>
-                <td className="px-3 py-2.5">
-                  <span className="flex items-center gap-2">
-                    <span className="w-4 text-right font-mono tabular-nums text-ink-900">{w.open}</span>
-                    <span className="hidden h-1.5 w-20 overflow-hidden rounded-full bg-ink-50 sm:block" aria-hidden="true">
-                      <span className="block h-full rounded-full bg-brand-500" style={{ width: `${(w.open / maxOpen) * 100}%` }} />
-                    </span>
-                  </span>
-                </td>
-                <td className="hidden px-3 py-2.5 text-right font-mono tabular-nums text-ink-700 sm:table-cell">{w.decided}</td>
-                <td className="py-2.5 pl-3 pr-4 text-right font-mono tabular-nums text-ink-700 sm:pr-5">{formatHours(w.medianReviewHours)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <CardNote>Review time is the typical time from starting a review to deciding it.</CardNote>
-    </Card>
-  );
-}
-
 function TopRules({ data }: { data: Dashboard }) {
   const max = Math.max(1, ...data.topRules.map((r) => r.submissions));
   return (
@@ -372,13 +431,13 @@ function TopRules({ data }: { data: Dashboard }) {
         titleId="rules-title"
         title="What first drafts get wrong"
         action={
-          <Link href="/rules" className="text-[0.8125rem] font-medium text-brand-700 hover:underline">
+          <Link href="/rules" className={linkClasses}>
             Rule library
           </Link>
         }
       />
       <CardBody>
-        <ol className="grid grid-cols-1 gap-x-10 gap-y-4 md:grid-cols-2">
+        <ol className="grid grid-cols-1 gap-x-10 gap-y-4 md:grid-cols-2 xl:grid-cols-1">
           {data.topRules.map((rule, i) => (
             <li key={rule.ruleId} className="flex gap-3">
               <span className="w-5 shrink-0 text-[0.8125rem] font-semibold tabular-nums text-ink-300">{i + 1}</span>

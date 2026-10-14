@@ -29,8 +29,8 @@ describe("role-only permissions", () => {
     }
   });
 
-  it("keeps the dashboard, full queue and audit trail away from submitters", () => {
-    for (const action of ["dashboard.view", "queue.view_all", "audit.view"] as const) {
+  it("keeps the overview, full queue, audit trail and rule test cases away from submitters", () => {
+    for (const action of ["dashboard.view", "queue.view_all", "audit.view", "rules.test"] as const) {
       expect(can(priya, action)).toBe(false);
       expect(can(marcus, action)).toBe(true);
       expect(can(dana, action)).toBe(true);

@@ -5,6 +5,7 @@ import { Fragment } from "react";
 import { RiskPill } from "@/components/risk-meter";
 import { SlaIndicator } from "@/components/sla";
 import { StatusBadge } from "@/components/status-badge";
+import { SummaryLine, type SummaryItem } from "@/components/summary-line";
 import { buttonClasses } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { can } from "@/domain/permissions";
@@ -140,7 +141,7 @@ export default async function QueuePage({ searchParams }: PageProps<"/queue">) {
 }
 
 function SummaryStrip({ summary, compliance, filters }: { summary: QueueSummary; compliance: boolean; filters: Filters }) {
-  const items = compliance
+  const items: SummaryItem[] = compliance
     ? [
         { label: "open", value: summary.active, href: queueHref(filters, { status: "open", sort: "sla", dir: "asc" }) },
         { label: "overdue", value: summary.overdue, tone: summary.overdue ? "high" : undefined, href: queueHref(filters, { status: "open", sort: "sla", dir: "asc" }) },
@@ -155,25 +156,7 @@ function SummaryStrip({ summary, compliance, filters }: { summary: QueueSummary;
         { label: "rejected", value: summary.byStatus.rejected, href: queueHref(filters, { status: "rejected" }) },
       ];
 
-  return (
-    <ul aria-label="At a glance" className="flex flex-wrap items-baseline gap-x-7 gap-y-2 border-y border-line py-3">
-      {items.map((item) => (
-        <li key={item.label}>
-          <Link href={item.href} className="group inline-flex items-baseline gap-1.5">
-            <span
-              className={cn(
-                "text-xl font-semibold leading-none tabular-nums tracking-[-0.02em]",
-                item.tone === "high" ? "text-high-700" : item.tone === "medium" ? "text-medium-700" : "text-ink-950",
-              )}
-            >
-              {item.value}
-            </span>
-            <span className="text-sm text-ink-600 underline-offset-4 group-hover:text-ink-950 group-hover:underline">{item.label}</span>
-          </Link>
-        </li>
-      ))}
-    </ul>
-  );
+  return <SummaryLine items={items} />;
 }
 
 const TABS: (Status | "open" | "all")[] = ["open", "submitted", "in_review", "changes_requested", "approved", "rejected", "all"];

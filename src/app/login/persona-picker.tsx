@@ -73,7 +73,7 @@ function OtherPersona({ persona }: { persona: Omit<PersonaCard, "tryThis"> }) {
         {pending.mine ? (
           <LoaderCircle className="size-3.5 shrink-0 animate-spin self-center text-brand-600" aria-hidden="true" />
         ) : (
-          <span className="shrink-0 text-ink-500">{ROLE_LABELS[persona.role]}</span>
+          <span className="shrink-0 text-ink-500">{persona.role === "submitter" ? persona.team : ROLE_LABELS[persona.role]}</span>
         )}
       </button>
     </li>
@@ -82,11 +82,11 @@ function OtherPersona({ persona }: { persona: Omit<PersonaCard, "tryThis"> }) {
 
 export function PersonaPicker({
   featured,
-  others,
+  teams,
   next,
 }: {
   featured: PersonaCard[];
-  others: Omit<PersonaCard, "tryThis">[];
+  teams: { name: string; people: Omit<PersonaCard, "tryThis">[] }[];
   next?: string;
 }) {
   const [state, formAction] = useActionState(signInAs, IDLE);
@@ -106,13 +106,20 @@ export function PersonaPicker({
       </section>
       <section aria-labelledby="everyone-else">
         <h2 id="everyone-else" className="text-sm font-semibold text-ink-950">
-          Everyone else
+          The rest of the team
         </h2>
-        <ul className="mt-1 grid gap-x-8 sm:grid-cols-2">
-          {others.map((p) => (
-            <OtherPersona key={p.id} persona={p} />
+        <div className="mt-3 grid gap-x-8 gap-y-5 sm:grid-cols-2">
+          {teams.map((team) => (
+            <div key={team.name}>
+              <h3 className="text-xs font-medium text-ink-500">{team.name}</h3>
+              <ul className="mt-1">
+                {team.people.map((p) => (
+                  <OtherPersona key={p.id} persona={p} />
+                ))}
+              </ul>
+            </div>
           ))}
-        </ul>
+        </div>
       </section>
     </form>
   );

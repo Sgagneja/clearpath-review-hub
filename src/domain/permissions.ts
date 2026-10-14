@@ -20,7 +20,8 @@ export type Action =
   | "dashboard.view"
   | "audit.view"
   | "audit.export"
-  | "import.run";
+  | "import.run"
+  | "rules.test";
 
 export interface Actor {
   id: string;
@@ -50,7 +51,7 @@ const ROLE_ONLY: Partial<Record<Action, (role: Role) => AuthzResult>> = {
   "queue.view_all": (role) =>
     isCompliance(role) ? ALLOW : deny("Only compliance can see the full queue."),
   "dashboard.view": (role) =>
-    isCompliance(role) ? ALLOW : deny("The dashboard is for the compliance team."),
+    isCompliance(role) ? ALLOW : deny("The team overview is for the compliance team."),
   "audit.view": (role) =>
     isCompliance(role) ? ALLOW : deny("The audit trail is for the compliance team."),
   "audit.export": (role) =>
@@ -63,6 +64,10 @@ const ROLE_ONLY: Partial<Record<Action, (role: Role) => AuthzResult>> = {
     isCompliance(role)
       ? ALLOW
       : deny("Bringing in old trackers and emails is for the compliance team. To send new copy, use New submission."),
+  // Checking that the checks behave is a compliance control. Marketing practises
+  // on their own copy in New submission, which saves nothing until they submit.
+  "rules.test": (role) =>
+    isCompliance(role) ? ALLOW : deny("The test cases are for the compliance team."),
 };
 
 export function authorize(

@@ -1,5 +1,15 @@
 import type { TextMatch } from "../types";
 
+/**
+ * Copy pasted from Word or Outlook, or pulled from a marketing email, carries
+ * look-alike characters: a non-breaking or soft hyphen inside "pre‑approved",
+ * zero-width spaces between words. Each is swapped one for one, so offsets into
+ * the result still point at the original copy.
+ */
+export function normalizeForMatching(text: string): string {
+  return text.replace(/[\u2010\u2011\u00AD]/g, "-").replace(/[\u200B-\u200D\u2060\uFEFF]/g, " ");
+}
+
 /** Every non-empty match of `pattern` in `text`, with offsets. */
 export function findAll(text: string, pattern: RegExp): TextMatch[] {
   const flags = pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`;

@@ -5,8 +5,8 @@ import { notFound } from "next/navigation";
 import { CopyProof } from "@/components/copy-proof";
 import { DecisionStamp } from "@/components/decision-stamp";
 import { FindingIndex, FindingList, ResolvedFindings } from "@/components/findings";
+import { LifecycleStrip } from "@/components/lifecycle-strip";
 import { Redline } from "@/components/redline";
-import { ReviewProgress } from "@/components/review-progress";
 import { RiskRuler } from "@/components/risk-meter";
 import { SeverityGlyph } from "@/components/severity";
 import { SlaIndicator } from "@/components/sla";
@@ -14,6 +14,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { Timeline } from "@/components/timeline";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Notice } from "@/components/ui/notice";
+import { lifecycleSteps } from "@/domain/lifecycle";
 import { can } from "@/domain/permissions";
 import { compareFindings } from "@/domain/precheck/engine";
 import { SLA_HOURS } from "@/domain/sla";
@@ -165,16 +166,25 @@ export default async function SubmissionPage({ params, searchParams }: PageProps
 
       <Card>
         <CardBody className="py-4">
-          <ReviewProgress
-            version={viewed.version}
-            submittedAt={viewed.submittedAt}
-            submittedBy={viewed.submittedBy?.name ?? null}
-            reviewStartedAt={viewed.reviewStartedAt}
-            reviewer={viewed.reviewer?.name ?? null}
-            assignee={isCurrent ? (detail.assignee?.name ?? null) : null}
-            decidedAt={viewed.decidedAt}
-            decidedBy={viewed.decidedBy?.name ?? null}
-            outcome={viewed.outcome}
+          <LifecycleStrip
+            steps={lifecycleSteps({
+              status: detail.status,
+              assignee: detail.assignee?.name ?? null,
+              targetLaunchDate: detail.targetLaunchDate,
+              launchAtRisk: detail.launchAtRisk,
+              rounds: detail.versions.map((v) => ({
+                version: v.version,
+                findingCount: v.findings.length,
+                riskLevel: v.riskLevel,
+                submittedBy: v.submittedBy?.name ?? null,
+                submittedAt: v.submittedAt,
+                reviewStartedAt: v.reviewStartedAt,
+                reviewer: v.reviewer?.name ?? null,
+                decidedAt: v.decidedAt,
+                decidedBy: v.decidedBy?.name ?? null,
+                outcome: v.outcome,
+              })),
+            })}
           />
         </CardBody>
       </Card>

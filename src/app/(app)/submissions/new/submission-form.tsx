@@ -20,17 +20,19 @@ import type { SampleCopy } from "./samples";
  * from the values the action echoes back, so a validation error never wipes
  * what was typed. Local state only mirrors them to drive the live pre-check.
  */
-export function SubmissionForm({ today, samples }: { today: string; samples: SampleCopy[] }) {
+export function SubmissionForm({ today, samples, initial }: { today: string; samples: SampleCopy[]; initial?: SampleCopy }) {
   const [state, formAction] = useFormAction(createSubmissionAction, IDLE);
   const formRef = useRef<HTMLFormElement>(null);
   const bodyRef = useRef<HTMLTextAreaElement>(null);
   const titleRef = useRef<HTMLInputElement>(null);
 
-  const initialProduct = (submittedValue(state, "productLine") as ProductLine | undefined) ?? "personal_loan";
-  const initialChannel = (submittedValue(state, "channel") as Channel | undefined) ?? "email";
+  const initialTitle = submittedValue(state, "title") ?? initial?.title;
+  const initialProduct = (submittedValue(state, "productLine") as ProductLine | undefined) ?? initial?.productLine ?? "personal_loan";
+  const initialChannel = (submittedValue(state, "channel") as Channel | undefined) ?? initial?.channel ?? "email";
+  const initialBody = submittedValue(state, "body") ?? initial?.body;
   const [productLine, setProductLine] = useState<ProductLine>(initialProduct);
   const [channel, setChannel] = useState<Channel>(initialChannel);
-  const [body, setBody] = useState(submittedValue(state, "body") ?? "");
+  const [body, setBody] = useState(initialBody ?? "");
 
   function loadSample(sample: SampleCopy) {
     const form = formRef.current;
@@ -71,7 +73,7 @@ export function SubmissionForm({ today, samples }: { today: string; samples: Sam
                 required
                 minLength={LIMITS.titleMin}
                 maxLength={LIMITS.titleMax}
-                defaultValue={submittedValue(state, "title")}
+                defaultValue={initialTitle}
                 placeholder="e.g. Fall debt consolidation email"
                 aria-invalid={Boolean(err("title"))}
                 aria-describedby={describedBy("title")}
@@ -138,7 +140,7 @@ export function SubmissionForm({ today, samples }: { today: string; samples: Sam
               rows={14}
               required
               maxLength={LIMITS.bodyMax}
-              defaultValue={submittedValue(state, "body")}
+              defaultValue={initialBody}
               onChange={(e) => setBody(e.target.value)}
               placeholder="Paste the full copy here…"
               aria-invalid={Boolean(err("body"))}
@@ -154,7 +156,7 @@ export function SubmissionForm({ today, samples }: { today: string; samples: Sam
           </div>
           <footer className="flex flex-col gap-3 rounded-b-xl border-t border-line bg-paper/60 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-[0.8125rem] text-ink-600">
-              Goes straight to the compliance queue. You&apos;ll be able to follow it and reply to comments.
+              Nothing is saved until you submit. Then it goes straight to the compliance queue, and you can follow it and reply to comments.
             </p>
             <SubmitButton variant="brand" pendingLabel="Submitting…">
               <Send aria-hidden="true" />

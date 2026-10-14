@@ -61,6 +61,14 @@ describe("runPrecheck", () => {
     expect(text.slice(match.start, match.end)).toBe("guaranteed approval");
   });
 
+  it("reads look-alike hyphens from Word and email, keeping offsets on the original copy", () => {
+    const text = "You’ve been pre\u2011approved for a ClearPath card.\u200BNo\u200Bcredit\u200Bcheck.";
+    const [prescreen] = findingFor(text, "fcra-prescreen-opt-out")!.matches;
+    expect(text.slice(prescreen.start, prescreen.end)).toBe("You’ve been pre\u2011approved");
+    const [claim] = findingFor(text, "udaap-absolute-claim")!.matches;
+    expect(text.slice(claim.start, claim.end)).toBe("No\u200Bcredit\u200Bcheck");
+  });
+
   it("scores the worst-case demo copy as high risk", () => {
     const result = check(
       "You've been pre-approved! Guaranteed approval, no credit check. Rates as low as 5.99%. Just $199/mo. Act now!",

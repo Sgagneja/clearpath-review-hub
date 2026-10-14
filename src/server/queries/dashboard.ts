@@ -10,6 +10,7 @@ import {
   slaHitRate,
   stageDurations,
   topRules,
+  unassignedLoad,
   weeklyThroughput,
   type MetricSubmission,
 } from "@/domain/metrics";
@@ -71,8 +72,9 @@ export async function getDashboard(actor: CurrentUser, now = new Date()) {
   const reviewers = directory.people.filter((p) => p.role !== "submitter");
   const ruleById = new Map(RULES.map((r) => [r.id, r]));
 
-  const active = subRows.filter((s) => s.status === "submitted" || s.status === "in_review");
-  const attention: AttentionItem[] = active
+  const waiting = subRows.filter((s) => s.status === "submitted");
+  const reviewing = subRows.filter((s) => s.status === "in_review");
+  const attention: AttentionItem[] = [...waiting, ...reviewing]
     .map((s) => {
       const round = roundsBySubmission.get(s.id)?.find((v) => v.version === s.currentVersion);
       return {
@@ -86,29 +88,27 @@ export async function getDashboard(actor: CurrentUser, now = new Date()) {
     })
     .sort((a, b) => a.sla.remainingMs - b.sla.remainingMs);
 
+  const isOverdue = (s: (typeof subRows)[number]) => s.slaDueAt.getTime() < now.getTime();
+
   return {
-    totals: {
-      submissions: subRows.length,
-      active: active.length,
-      overdue: attention.filter((a) => a.sla.state === "overdue").length,
-      launchAtRisk: attention.filter((a) => a.launchAtRisk).length,
-      withSubmitters: subRows.filter((s) => s.status === "changes_requested").length,
-      activeByRisk: {
-        high: active.filter((s) => s.riskLevel === "high").length,
-        medium: active.filter((s) => s.riskLevel === "medium").length,
-        low: active.filter((s) => s.riskLevel === "low").length,
-      } satisfies Record<RiskLevel, number>,
+    /** Open work at each stage of the review lifecycle, right now. */
+    pipeline: {
+      waiting: { count: waiting.length, overdue: waiting.filter(isOverdue).length, unassigned: waiting.filter((s) => !s.assigneeId).length },
+      inReview: { count: reviewing.length, overdue: reviewing.filter(isOverdue).length },
+      withMarketing: { count: subRows.filter((s) => s.status === "changes_requested").length },
     },
+    totals: { submissions: subRows.length },
     cycleTime: cycleTime(metricSubs),
     firstPass: firstPassApprovalRate(metricSubs),
     slaHit: slaHitRate(metricSubs),
     stages,
     bottleneck: bottleneck(stages),
     weeks: weeklyThroughput(metricSubs, now, WEEKS),
-    workload: reviewerWorkload(metricSubs, reviewers.map((r) => r.id)).map((load) => ({
+    workload: reviewerWorkload(metricSubs, reviewers.map((r) => r.id), now).map((load) => ({
       ...load,
       reviewer: directory.get(load.reviewerId)!,
     })),
+    unassigned: unassignedLoad(metricSubs, now),
     topRules: topRules(metricSubs, 6).map((r) => ({
       ...r,
       title: ruleById.get(r.ruleId)?.title ?? r.ruleId,

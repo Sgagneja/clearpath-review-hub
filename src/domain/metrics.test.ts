@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   bottleneck,
   cycleTime,
+  decisionRecord,
   firstPassApprovalRate,
   mean,
   median,
@@ -10,6 +11,7 @@ import {
   stageDurations,
   startOfWeekUtc,
   topRules,
+  unassignedLoad,
   weeklyThroughput,
   type MetricRound,
   type MetricSubmission,
@@ -140,12 +142,61 @@ describe("stageDurations and bottleneck", () => {
 });
 
 describe("reviewerWorkload", () => {
-  it("counts open assignments and decisions per reviewer", () => {
-    expect(reviewerWorkload(all, ["u_marcus", "u_alana", "u_kenji"])).toEqual([
-      { reviewerId: "u_marcus", open: 1, decided: 1, medianReviewHours: 6 },
-      { reviewerId: "u_alana", open: 0, decided: 2, medianReviewHours: 11 },
-      { reviewerId: "u_kenji", open: 0, decided: 0, medianReviewHours: null },
-    ]);
+  it("shows what each reviewer has open and how their decisions went", () => {
+    const [marcus, alana, kenji] = reviewerWorkload(all, ["u_marcus", "u_alana", "u_kenji"], now);
+    expect(marcus).toEqual({
+      reviewerId: "u_marcus",
+      open: 1,
+      toStart: 1,
+      inReview: 0,
+      overdue: 0,
+      nextDueAt: at(138),
+      decided: 1,
+      onTime: { rate: 1, numerator: 1, denominator: 1 },
+      medianReviewHours: 6,
+    });
+    // v1 decided 2h late, v2 on time; reviews took 20h and 2h.
+    expect(alana).toMatchObject({ open: 0, nextDueAt: null, decided: 2, onTime: { rate: 0.5 }, medianReviewHours: 11 });
+    expect(kenji).toMatchObject({ open: 0, decided: 0, onTime: { rate: null }, medianReviewHours: null });
+  });
+
+  it("counts a review as overdue once its current round's deadline passes", () => {
+    const [marcus] = reviewerWorkload([waiting], ["u_marcus"], at(140));
+    expect(marcus).toMatchObject({ open: 1, overdue: 1, nextDueAt: at(138) });
+  });
+
+  it("splits open work into not started and under review", () => {
+    const started: MetricSubmission = { ...waiting, id: "d", status: "in_review" };
+    const [marcus] = reviewerWorkload([waiting, started], ["u_marcus"], now);
+    expect(marcus).toMatchObject({ open: 2, toStart: 1, inReview: 1 });
+  });
+});
+
+describe("unassignedLoad", () => {
+  it("only counts open work with nobody on it", () => {
+    const loose: MetricSubmission = { ...waiting, id: "e", assigneeId: null };
+    expect(unassignedLoad([quickApproval, waiting, loose], now)).toEqual({
+      open: 1,
+      toStart: 1,
+      inReview: 0,
+      overdue: 0,
+      nextDueAt: at(138),
+    });
+  });
+});
+
+describe("decisionRecord", () => {
+  it("ignores rounds that are still open", () => {
+    expect(decisionRecord(waiting.rounds)).toEqual({
+      decided: 0,
+      onTime: { rate: null, numerator: 0, denominator: 0 },
+      medianReviewHours: null,
+    });
+  });
+
+  it("leaves rounds decided without a recorded start out of review time", () => {
+    const imported = round({ submittedAt: at(0), decidedAt: at(5), outcome: "approved" });
+    expect(decisionRecord([...revised.rounds, imported])).toMatchObject({ decided: 3, medianReviewHours: 11 });
   });
 });
 

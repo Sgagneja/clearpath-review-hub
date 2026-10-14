@@ -21,12 +21,13 @@ export default defineConfig({
     channel: process.env.CI ? undefined : "chrome",
     trace: process.env.CI ? "retain-on-failure" : "off",
   },
+  // The workflow tests reseed the database, so they run once, at laptop size.
   projects: [
-    { name: "phone", use: { ...devices["iPhone 13"], defaultBrowserType: "chromium" } },
-    { name: "tablet", use: { viewport: { width: 768, height: 1024 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 } },
+    { name: "phone", testIgnore: /workflows/, use: { ...devices["iPhone 13"], defaultBrowserType: "chromium" } },
+    { name: "tablet", testIgnore: /workflows/, use: { viewport: { width: 768, height: 1024 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 } },
     { name: "laptop", use: { viewport: { width: 1280, height: 800 } } },
-    { name: "desktop", use: { viewport: { width: 1920, height: 1080 } } },
-    { name: "wide", use: { viewport: { width: 2560, height: 1440 } } },
+    { name: "desktop", testIgnore: /workflows/, use: { viewport: { width: 1920, height: 1080 } } },
+    { name: "wide", testIgnore: /workflows/, use: { viewport: { width: 2560, height: 1440 } } },
   ],
   webServer: {
     command: process.env.CI ? "npm run start" : "npm run dev",

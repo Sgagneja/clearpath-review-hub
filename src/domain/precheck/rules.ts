@@ -66,7 +66,9 @@ export interface Rule {
 // Shared patterns
 // ---------------------------------------------------------------------------
 
-const PCT = String.raw`(?<![\d.])\d{1,2}(?:\.\d{1,3})?\s?%`;
+/** The percent sign, or the word: direct mail and scripts often spell it out. */
+const PERCENT = String.raw`\s?(?:%|percent\b)`;
+const PCT = String.raw`(?<![\d.])\d{1,2}(?:\.\d{1,3})?${PERCENT}`;
 const APR_WORD = String.raw`(?:APRs?\b|annual\s+percentage\s+rates?)`;
 const APR_AFTER_RATE = new RegExp(
   String.raw`^\s*(?:(?:-|–|—|to)\s*${PCT}\s*)?(?:\(?(?:fixed|variable|standard|regular|purchase)\)?\s*)?${APR_WORD}`,
@@ -131,13 +133,18 @@ const TRIGGER_PATTERNS: RegExp[] = [
   /\b\d{1,2}[-\s](?:month|year|yr)\s+(?:terms?|loans?|repayment|financing|plans?|fixed|mortgages?)\b/gi,
   /\b(?:pay\s+(?:it\s+)?(?:off|back)|repay(?:\s+it)?)\s+(?:in|over|within)\s+\d{1,3}\s+(?:months|years)\b/gi,
   // Down payment: "3% down", "$0 down", "down payments as low as 3%"
-  /\b\d{1,2}(?:\.\d)?\s?%\s+down\b|\$\s?\d[\d,]*\s+down\b|\bdown\s+payments?\s+(?:of|as\s+low\s+as|from)\s+(?:\$\s?\d[\d,]*|\d{1,2}(?:\.\d)?\s?%)/gi,
+  new RegExp(
+    String.raw`\b\d{1,2}(?:\.\d)?${PERCENT}\s+down\b|\$\s?\d[\d,]*\s+down\b|\bdown\s+payments?\s+(?:of|as\s+low\s+as|from)\s+(?:\$\s?\d[\d,]*|\d{1,2}(?:\.\d)?${PERCENT})`,
+    "gi",
+  ),
   // Finance charge amount
   /\b(?:finance\s+charges?|interest)\s+(?:of|as\s+low\s+as|under|less\s+than)\s+\$\s?\d[\d,]*/gi,
 ];
 
-const CARD_FEE_TRIGGERS =
-  /\$\s?\d[\d,]*\s+annual\s+fee\b|\b\d(?:\.\d+)?\s?%\s+(?:balance\s+transfer|cash\s+advance|foreign\s+transaction)\s+fees?\b/gi;
+const CARD_FEE_TRIGGERS = new RegExp(
+  String.raw`\$\s?\d[\d,]*\s+annual\s+fee\b|\b\d(?:\.\d+)?${PERCENT}\s+(?:balance\s+transfer|cash\s+advance|foreign\s+transaction)\s+fees?\b`,
+  "gi",
+);
 
 const tilaTriggerTerms: Rule = {
   id: "tila-trigger-terms",
@@ -253,10 +260,12 @@ const asLowAsRate: Rule = {
   },
 };
 
-const INTRO_OFFER =
-  /\b0\s?%\s+(?:intro(?:ductory)?\s+)?APR\b|\bintro(?:ductory)?\s+(?:APR|rate)\b|\bpromotional\s+(?:APR|rate)\b|\b0\s?%\s+(?:interest|financing)\b|\b0\s?%\s+(?:for|until)\b/gi;
+const INTRO_OFFER = new RegExp(
+  String.raw`\b0${PERCENT}\s+(?:intro(?:ductory)?\s+)?APR\b|\bintro(?:ductory)?\s+(?:APR|rate)\b|\bpromotional\s+(?:APR|rate)\b|\b0${PERCENT}\s+(?:interest|financing)\b|\b0${PERCENT}\s+(?:for|until)\b`,
+  "gi",
+);
 const INTRO_DURATION =
-  /\bfor\s+(?:the\s+first\s+)?\d{1,2}\s+(?:billing\s+cycles|months)\b|\b\d{1,2}[-\s]months?\s+(?:intro(?:ductory)?|promo(?:tional)?)\b|\buntil\s+(?:january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{4}\b/i;
+  /\bfor\s+(?:the\s+|your\s+)?(?:first\s+)?\d{1,2}\s+(?:billing\s+cycles|months)\b|\b\d{1,2}[-\s]months?\s+(?:intro(?:ductory)?|promo(?:tional)?)\b|\buntil\s+(?:january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{4}\b/i;
 const GO_TO_RATE = new RegExp(
   String.raw`\b(?:then|after\s+that|thereafter|afterwards?|after\s+the\s+(?:intro(?:ductory)?|promo(?:tional)?)\s+period)\b[\s\S]{0,60}?${PCT}`,
   "i",
@@ -426,9 +435,9 @@ const prequalImpliesApproval: Rule = {
   category: "claim",
   severity: "high",
   citation: "Reg Z · 12 CFR 1026.24(i); MAP Rule · 12 CFR 1014.3",
-  products: ["mortgage_prequal", "personal_loan"],
+  products: ALL_PRODUCTS,
   summary: "“Prequalified” must not be framed as an approval, lock or commitment to lend.",
-  check({ text }) {
+  check({ text, productLine }) {
     const matches: TextMatch[] = [];
     for (const pq of findAll(text, PREQUAL)) {
       const windowStart = Math.max(0, pq.start - 40);
@@ -444,6 +453,8 @@ const prequalImpliesApproval: Rule = {
     if (matches.length === 0) return [];
     return [
       {
+        // The mortgage advertising rules don't cover cards; deceptive framing still does.
+        ...(productLine === "credit_card" ? { citation: UDAAP } : {}),
         matches: dedupeMatches(matches),
         message:
           "Prequalification is a preliminary estimate, but here it sits next to approval language. Consumers will read it as a credit decision or commitment to lend.",
@@ -587,8 +598,10 @@ const fairLendingLanguage: Rule = {
   },
 };
 
-const OFFER_SIGNALS =
-  /\d{1,2}(?:\.\d{1,3})?\s?%|\$\s?\d|\bbonus\b|\bcash\s?back\b|\brewards?\b|\bpoints\b|\bintro(?:ductory)?\b|\boffers?\b/i;
+const OFFER_SIGNALS = new RegExp(
+  String.raw`${PCT}|\$\s?\d|\bbonus\b|\bcash\s?back\b|\brewards?\b|\bpoints\b|\bintro(?:ductory)?\b|\boffers?\b`,
+  "i",
+);
 const TERMS_FOOTER =
   /\bterms\s+(?:and|&)\s+conditions\s+apply|\bterms\s+apply|\bsee\s+(?:full\s+)?terms|\brestrictions\s+(?:may\s+)?apply|\bsubject\s+to\s+credit\s+approval|\boffer\s+details\b|\bsee\s+\S+\s+for\s+(?:details|terms)/i;
 

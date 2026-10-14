@@ -9,11 +9,11 @@ import { PersonaPicker, type PersonaCard } from "./persona-picker";
 
 export const metadata: Metadata = { title: "Sign in" };
 
-/** What each suggested person is good for, so a first-time visitor knows where to start. */
+/** What each suggested person is good for, so a first-time visitor knows where to start. In display order. */
 const FEATURED: Record<string, string> = {
-  u_priya: "Write a new email and watch the pre-check flag problems as you type, or revise the wedding-loan email compliance sent back.",
-  u_marcus: "Work through the queue, most urgent first. Try approving copy you wrote yourself: someone else has to decide it.",
-  u_dana: "See how long reviews take and where they get stuck, hand out work, and download the audit trail for an examiner.",
+  u_dana: "Start with the whole team: work at each stage, who has what, where it's stuck. Hand out reviews and download the audit trail for an examiner.",
+  u_marcus: "Starts on the team overview too, with his own reviews under My work. Try approving copy you wrote yourself: someone else has to decide it.",
+  u_priya: "Marketing's side. Write a new email and watch the pre-check flag problems as you type, or revise the wedding-loan email compliance sent back.",
 };
 
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
@@ -25,6 +25,10 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
     return person ? [{ ...person, tryThis }] : [];
   });
   const others = directory.people.filter((p) => !(p.id in FEATURED));
+  const teams = [
+    { name: "Compliance", people: others.filter((p) => p.role !== "submitter") },
+    { name: "Marketing", people: others.filter((p) => p.role === "submitter") },
+  ].filter((t) => t.people.length > 0);
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-2xl flex-col px-5 py-10 sm:px-8 sm:py-16">
@@ -51,7 +55,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
       ) : null}
 
       <div className="mt-10 flex-1">
-        <PersonaPicker featured={featured} others={others} next={nextPath} />
+        <PersonaPicker featured={featured} teams={teams} next={nextPath} />
       </div>
 
       <p className="mt-12 text-xs text-ink-400">

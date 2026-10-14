@@ -1,12 +1,13 @@
 import { compareSeverity, riskLevel, riskScore } from "../risk";
 import type { Channel, Finding, PrecheckResult, ProductLine } from "../types";
 import { RULES, type Rule } from "./rules";
+import { normalizeForMatching } from "./text";
 
 /**
  * Bumped whenever a rule changes. Stored with every pre-check result so an
  * examiner can tell exactly which rule set produced a historical finding.
  */
-export const ENGINE_VERSION = "2026.10.1";
+export const ENGINE_VERSION = "2026.10.2";
 
 export interface PrecheckInput {
   text: string;
@@ -25,8 +26,9 @@ export function applicableRules(productLine: ProductLine): Rule[] {
  */
 export function runPrecheck(input: PrecheckInput): PrecheckResult {
   const rules = applicableRules(input.productLine);
+  const context = { ...input, text: normalizeForMatching(input.text) };
   const findings = rules.flatMap((rule) =>
-    rule.check(input).map(
+    rule.check(context).map(
       (hit): Finding => ({
         key: hit.keySuffix ? `${rule.id}:${hit.keySuffix}` : rule.id,
         ruleId: rule.id,

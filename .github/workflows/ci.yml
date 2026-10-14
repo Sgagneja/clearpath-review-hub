@@ -60,6 +60,7 @@ jobs:
       - run: npm run db:setup
       - run: npm run build
       - run: npm run test:layout
+      - run: npm run test:workflows
       - name: Keep the screenshots for review
         if: always()
         uses: actions/upload-artifact@v4
